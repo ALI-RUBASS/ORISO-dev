@@ -380,6 +380,11 @@ export const MessageSubmitInterfaceComponent = ({
 
 	const resizeTextarea = useCallback(() => {
 		const textInput: any = textareaInputRef.current;
+		if (!textInput) return;
+		
+		// Check if editor is empty - if so, reset to default height
+		const hasText = editorState.getCurrentContent().hasText();
+		
 		// default values
 		let textareaMaxHeight;
 		if (window.innerWidth <= 900) {
@@ -390,7 +395,46 @@ export const MessageSubmitInterfaceComponent = ({
 		const richtextHeight = 38;
 		const fileHeight = 48;
 
-		// calculate inputHeight
+		// Default min heights from CSS: mobile 88px, desktop 106px
+		const defaultMinHeight = window.innerWidth <= 900 ? 88 : 106;
+
+		// If editor is empty, force it back to default height
+		if (!hasText) {
+			let textInputStyles = `height: ${defaultMinHeight}px !important; max-height: ${defaultMinHeight}px !important; min-height: ${defaultMinHeight}px !important; overflow-y: hidden !important;`;
+			const textInputMarginTop = isRichtextActive
+				? `margin-top: ${richtextHeight}px !important;`
+				: '';
+			const textInputMarginBottom = attachmentSelected
+				? `margin-bottom: ${fileHeight}px !important;`
+				: '';
+			textInputStyles += ` ${textInputMarginTop} ${textInputMarginBottom}`;
+			
+			if (isRichtextActive) {
+				textInputStyles += `border-top: none !important; border-top-right-radius: 0 !important; box-shadow: none !important;`;
+			}
+			if (attachmentSelected) {
+				textInputStyles += `border-bottom: none !important; border-bottom-right-radius: 0 !important;`;
+			}
+			
+			textInput.setAttribute('style', textInputStyles);
+			
+			// Force Draft.js containers to reset height
+			const editorContainer = textInput.querySelector('.DraftEditor-root');
+			if (editorContainer) {
+				editorContainer.setAttribute('style', `height: ${defaultMinHeight}px !important; max-height: ${defaultMinHeight}px !important;`);
+			}
+			const editorContent = textInput.querySelector('.public-DraftEditor-content');
+			if (editorContent) {
+				editorContent.setAttribute('style', `height: ${defaultMinHeight}px !important; max-height: ${defaultMinHeight}px !important;`);
+			}
+			const editorContentDiv = textInput.querySelector('.public-DraftEditor-content > div');
+			if (editorContentDiv) {
+				editorContentDiv.setAttribute('style', `height: auto !important; max-height: none !important;`);
+			}
+			return;
+		}
+
+		// If editor has text, allow it to grow normally
 		const textHeight = document.querySelector(
 			'.public-DraftEditor-content > div'
 		)?.scrollHeight;
@@ -400,6 +444,7 @@ export const MessageSubmitInterfaceComponent = ({
 		textInputMaxHeight = attachmentSelected
 			? textInputMaxHeight - fileHeight
 			: textInputMaxHeight;
+		
 		const currentInputHeight =
 			textHeight > textInputMaxHeight ? textInputMaxHeight : textHeight;
 
@@ -433,7 +478,7 @@ export const MessageSubmitInterfaceComponent = ({
 		if (scrollButton) {
 			scrollButton.style.bottom = textareaContainerHeight + 24 + 'px';
 		}
-	}, [attachmentSelected, isRichtextActive]);
+	}, [attachmentSelected, isRichtextActive, editorState]);
 
 	const toggleAbsentMessage = useCallback(() => {
 		//TODO: not react way: use state and based on that set a class
@@ -475,7 +520,19 @@ export const MessageSubmitInterfaceComponent = ({
 		onMessageSendSuccess?.();
 		setEditorState(EditorState.createEmpty());
 		setActiveInfo('');
-		resizeTextarea();
+		// Force reset to default height after clearing - use multiple timeouts to ensure DOM updates
+		setTimeout(() => {
+			resizeTextarea();
+		}, 0);
+		setTimeout(() => {
+			resizeTextarea();
+		}, 50);
+		setTimeout(() => {
+			resizeTextarea();
+		}, 100);
+		setTimeout(() => {
+			resizeTextarea();
+		}, 200);
 		setTimeout(() => setIsRequestInProgress(false), 1200);
 	}, [onMessageSendSuccess, resizeTextarea]);
 

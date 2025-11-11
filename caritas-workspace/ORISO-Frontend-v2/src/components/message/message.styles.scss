@@ -567,3 +567,52 @@ $message-attachment-color: $secondary !default;
 		opacity: 0;
 	}
 }
+
+// Expand/Collapse button for long messages
+.messageItem__expandBtn {
+	display: inline-block;
+	margin-top: 8px;
+	padding: 4px 12px;
+	background: transparent;
+	border: none;
+	font-size: 13px;
+	font-weight: bold;
+	cursor: pointer;
+	text-decoration: underline;
+	transition: all 0.2s ease;
+	position: relative;
+	z-index: 10;
+	pointer-events: auto;
+	
+	// Default color for incoming messages (red)
+	&--incoming {
+		color: #e74c3c; // Red color for incoming messages
+		
+		&:hover {
+			color: #c0392b;
+			text-decoration: none;
+		}
+		
+		&:focus {
+			outline: 2px solid #e74c3c;
+			outline-offset: 2px;
+			border-radius: 4px;
+		}
+	}
+	
+	// Color for outgoing messages (myMessage - white)
+	&--myMessage {
+		color: #ffffff; // White color for outgoing messages
+		
+		&:hover {
+			color: #e6e6e6;
+			text-decoration: none;
+		}
+		
+		&:focus {
+			outline: 2px solid #ffffff;
+			outline-offset: 2px;
+			border-radius: 4px;
+		}
+	}
+}

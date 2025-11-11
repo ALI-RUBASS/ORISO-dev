@@ -122,6 +122,14 @@ $inputBoxShadow: inset 0 2px 0 0 $message-submit-interface-textarea-shadow-color
 			background-color: $white;
 			box-sizing: border-box;
 			box-shadow: $message-submit-interface-textarea-box-shadow;
+			
+			// Remove focus outline/border
+			&:focus,
+			&:focus-visible,
+			&:focus-within {
+				outline: none !important;
+				border: $inputBorder;
+			}
 
 			&::placeholder,
 			&:-ms-input-placeholder {
@@ -471,7 +479,23 @@ $inputBoxShadow: inset 0 2px 0 0 $message-submit-interface-textarea-shadow-color
 			cursor: pointer;
 			position: relative;
 			z-index: 1;
+			
+			// Remove focus outline
+			&:focus,
+			&:focus-visible,
+			&:focus-within {
+				outline: none !important;
+			}
 		}
+		
+		// Remove focus outline from editor content
+		.public-DraftEditor-content {
+			&:focus,
+			&:focus-visible {
+				outline: none !important;
+			}
+		}
+		
 		.public-DraftEditorPlaceholder-root {
 			position: absolute;
 			color: $message-submit-interface-textarea-placeholder-color;

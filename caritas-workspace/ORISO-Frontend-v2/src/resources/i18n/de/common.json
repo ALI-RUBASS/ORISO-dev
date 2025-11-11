@@ -444,7 +444,9 @@
 			"encryption": {
 				"error": "Nachricht verschlüsselt - Fehler beim Entschlüsseln",
 				"text": "Nachricht verschlüsselt"
-			}
+			},
+			"showMore": "Mehr anzeigen",
+			"showLess": "Weniger anzeigen"
 		},
 		"roomNotFound": {
 			"notice": {
@@ -1195,6 +1197,8 @@
 				"headline": "Oder vereinbare jetzt einen Termin"
 			}
 		},
+		"showLess": "Weniger anzeigen",
+		"showMore": "Mehr anzeigen",
 		"today": "Heute",
 		"tomorrow": "Morgen",
 		"unread": "ungelesen",

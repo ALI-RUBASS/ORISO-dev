@@ -432,7 +432,9 @@
 			"encryption": {
 				"error": "Message encrypted - error during decryption",
 				"text": "Message encrypted"
-			}
+			},
+			"showMore": "Show more",
+			"showLess": "Show less"
 		},
 		"roomNotFound": {
 			"notice": {
@@ -1180,6 +1182,8 @@
 				"headline": "Or make an appointment now"
 			}
 		},
+		"showLess": "Show less",
+		"showMore": "Show more",
 		"today": "Today",
 		"tomorrow": "Tomorrow",
 		"unread": "unread",
