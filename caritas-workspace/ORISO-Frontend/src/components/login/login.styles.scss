@@ -39,6 +39,18 @@ $link-hover-text-decoration: $link-text-decoration !default;
 		align-items: center;
 	}
 
+	&__fields,
+	&__actions {
+		width: 100%;
+		max-width: 380px;
+		margin: 0 auto;
+		display: flex;
+		flex-direction: column;
+		align-items: stretch;
+	
+	}
+
+
 	.button-as-link {
 		border: none;
 		background: none;
@@ -69,16 +81,103 @@ $link-hover-text-decoration: $link-text-decoration !default;
 	}
 
 	.inputField {
-		width: 280px;
-		margin-bottom: $grid-base-two;
+		width: 100%;
+		max-width: 100%;
+		margin-bottom: 20px;
 
-		@include breakpoint($fromLarge) {
-			width: 320px;
+		label {
+			display: none;
+		}
+
+		input,
+		.inputField__input {
+			box-sizing: border-box;
+			width: 100% !important;
+			max-width: 100% !important;
+			border-radius: 28px;
+			padding: 15px 20px;
+			padding-left: 48px;
+			border: 1.5px solid #e5e7eb;
+			background: #f9fafb;
+			font-size: 15px;
+			transition: all 0.3s ease;
+
+			&:focus {
+				border-color: #e5e7eb;
+				background: white;
+				outline: none;
+				box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.05);
+			}
+
+			&::placeholder {
+				color: #9ca3af;
+			}
 		}
 	}
 
 	&__headline {
 		transform: $login-icon-transform;
+		margin-bottom: 20px;
+		
+		h2 {
+			font-size: 32px;
+			font-weight: 700;
+			color: #1f2937;
+			letter-spacing: -0.5px;
+			margin: 0;
+		}
+	}
+
+	&__actions {
+		align-items: center;
+
+		.button__wrapper,
+		.button__item,
+		.button {
+			width: 100%;
+			max-width: 100%;
+		}
+	}
+
+	&__securityBanner {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		gap: 8px;
+		padding: 16px 18px;
+		background: rgba(16, 185, 129, 0.12);
+		border: 1.5px solid rgba(16, 185, 129, 0.4);
+		border-radius: 12px;
+		margin-top: 20px;
+		margin-bottom: 0;
+		box-shadow: 0 2px 8px rgba(16, 185, 129, 0.1);
+		text-align: center;
+
+		.security-header {
+			display: flex;
+			align-items: center;
+			gap: 8px;
+			
+			svg {
+				flex-shrink: 0;
+				width: 20px;
+				height: 20px;
+			}
+
+			strong {
+				font-size: 14px;
+				color: #059669;
+				font-weight: 600;
+				letter-spacing: 0.3px;
+			}
+		}
+
+		span {
+			font-size: 12px;
+			color: #047857;
+			font-weight: 400;
+			line-height: 1.4;
+		}
 	}
 
 	&__otp {
@@ -114,10 +213,43 @@ $link-hover-text-decoration: $link-text-decoration !default;
 		}
 	}
 
-	.button__item {
+	.button {
 		width: 100%;
-		margin-top: $grid-base-two;
+		max-width: 100%;
+	}
+
+	.button__item {
+		box-sizing: border-box;
+		width: 100%;
+		min-width: unset;
+		max-width: 100%;
+		margin-top: 25px;
+		padding: 15px 24px;
+		background: rgba(216, 0, 3);
+		border: none;
+		border-radius: 28px;
+		color: white;
+		font-size: 15px;
+		font-weight: 600;
+		letter-spacing: 0.3px;
+		box-shadow: 0 4px 15px rgba(220, 38, 38, 0.3);
+		transition: all 0.3s ease;
 		transform: $login-icon-transform;
+
+		&:hover:not(:disabled) {
+			background: linear-gradient(135deg, #b91c1c 0%, #7f1d1d 100%);
+			box-shadow: 0 6px 20px rgba(220, 38, 38, 0.4);
+			transform: translateY(-2px);
+		}
+
+		&:active:not(:disabled) {
+			transform: translateY(0);
+		}
+
+		&:disabled {
+			opacity: 0.5;
+			cursor: not-allowed;
+		}
 	}
 
 	&__passwordReset {
@@ -178,5 +310,16 @@ $link-hover-text-decoration: $link-text-decoration !default;
 
 	.twoFactorAuthResendMail {
 		margin-bottom: $grid-base-two;
+	}
+}
+
+@keyframes fadeIn {
+	from {
+		opacity: 0;
+		transform: translateY(20px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
 	}
 }

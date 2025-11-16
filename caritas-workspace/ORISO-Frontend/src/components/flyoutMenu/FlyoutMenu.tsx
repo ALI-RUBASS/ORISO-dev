@@ -4,6 +4,7 @@ import { MenuHorizontalIcon } from '../../resources/img/icons';
 import './flyoutMenu.styles.scss';
 
 interface FlyoutMenuProps {
+	children?: React.ReactNode;
 	isOpen?: boolean;
 	handleClose?: () => void;
 	position?:

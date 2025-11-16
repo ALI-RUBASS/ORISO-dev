@@ -5,8 +5,10 @@ metadata:
   namespace: caritas
   labels:
     app: matrix-synapse
+  annotations:
+    description: "Matrix Synapse - Scaled for 300+ concurrent users (3 CPU cores, 6Gi memory)"
 spec:
-  replicas: 1
+  replicas: 1  # Scale to 2+ for 300+ concurrent users
   revisionHistoryLimit: 1
   selector:
     matchLabels:
@@ -33,11 +35,11 @@ spec:
           value: "false"
         resources:
           requests:
-            cpu: 250m
-            memory: 512Mi
+            cpu: 1500m
+            memory: 3Gi
           limits:
-            cpu: 500m
-            memory: 1Gi
+            cpu: 3000m
+            memory: 6Gi
         volumeMounts:
         - name: synapse-data
           mountPath: /data

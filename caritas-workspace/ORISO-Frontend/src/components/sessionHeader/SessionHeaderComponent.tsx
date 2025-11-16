@@ -28,6 +28,7 @@ import {
 	getUserDataTranslateBase
 } from '../profile/profileHelpers';
 import { ReactComponent as BackIcon } from '../../resources/img/icons/arrow-left.svg';
+import { UserAvatar } from '../message/UserAvatar';
 import './sessionHeader.styles';
 import { useSearchParam } from '../../hooks/useSearchParams';
 import { useTranslation } from 'react-i18next';
@@ -144,6 +145,12 @@ export const SessionHeaderComponent = (props: SessionHeaderProps) => {
 							!isAskerInfoAvailable()
 					})}
 				>
+					<UserAvatar
+						username={contact?.username || 'User'}
+						displayName={contact?.displayName}
+						userId={contact?.username || 'unknown'}
+						size="40px"
+					/>
 					{hasUserAuthority(AUTHORITIES.ASKER_DEFAULT, userData) && (
 						<h3>
 							{contact?.displayName ||

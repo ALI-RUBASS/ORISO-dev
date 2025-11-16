@@ -1,14 +1,17 @@
 .header {
-	display: flex;
+	display: none !important; /* Hidden for clean Element-like UI */
+	visibility: hidden !important;
+	height: 0 !important;
+	flex: 0 0 0 !important;
+	padding: 0 !important;
+	margin: 0 !important;
+	overflow: hidden !important;
 	flex-direction: column;
 	justify-content: center;
 	align-items: center;
 	flex-wrap: wrap;
 	background-color: $white;
-	height: $header-height;
-	flex: 0 0 $header-height;
 	width: 100%;
-	padding: 0 $grid-base-three;
 
 	.headline {
 		margin-bottom: 0;

@@ -3,6 +3,7 @@ import { E2EEContext } from '../../globalState';
 import { loadKeysFromRocketChat } from '../../utils/encryptionHelpers';
 
 interface NonPlainRoutesWrapperProps {
+	children?: React.ReactNode;
 	logoutHandler?: Function;
 }
 

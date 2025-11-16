@@ -7,6 +7,7 @@ import {
 	getPrettyDateFromMessageDate,
 	MILLISECONDS_PER_SECOND
 } from '../../utils/dateHelpers';
+import { UserAvatar } from '../message/UserAvatar';
 import { SESSION_LIST_TAB } from '../session/sessionHelpers';
 import {
 	AUTHORITIES,
@@ -348,7 +349,12 @@ export const SessionListItemComponent = ({
 					</div>
 					<div className="sessionsListItem__row">
 						<div className="sessionsListItem__icon">
-							<Icon title={iconTitle} aria-label={iconTitle} />
+							<UserAvatar
+								username={activeSession.user?.username || activeSession.consultant?.username || 'User'}
+								displayName={activeSession.user?.username || activeSession.consultant?.displayName}
+								userId={activeSession.user?.username || activeSession.consultant?.id || 'unknown'}
+								size="32px"
+							/>
 						</div>
 						<div
 							className={clsx(
@@ -357,7 +363,7 @@ export const SessionListItemComponent = ({
 									'sessionsListItem__username--readLabel'
 							)}
 						>
-							{activeSession.item.topic}
+							{typeof activeSession.item.topic === "string" ? activeSession.item.topic : activeSession.item.topic?.name || ""}
 						</div>
 					</div>
 					<div className="sessionsListItem__row">
@@ -447,7 +453,12 @@ export const SessionListItemComponent = ({
 				</div>
 				<div className="sessionsListItem__row">
 					<div className="sessionsListItem__icon">
-						<Icon title={iconTitle} aria-label={iconTitle} />
+						<UserAvatar
+							username={activeSession.user?.username || activeSession.consultant?.username || 'User'}
+							displayName={activeSession.user?.username || activeSession.consultant?.displayName}
+							userId={activeSession.user?.username || activeSession.consultant?.id || 'unknown'}
+							size="32px"
+						/>
 					</div>
 					<div
 						className={clsx(

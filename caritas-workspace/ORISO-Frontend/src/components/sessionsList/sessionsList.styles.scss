@@ -278,4 +278,69 @@ $tabBarHeightDesktop: 53px;
 			margin-left: 0;
 		}
 	}
+	
+	// Icon-only mode (like Element when sidebar < 220px)
+	&__wrapper--iconOnly {
+		min-width: 80px;
+		
+		.sessionsListItem__username,
+		.sessionsListItem__subject,
+		.sessionsListItem__consultingType,
+		.sessionsListItem__topic,
+		.sessionsListItem__date,
+		.sessionsListItem__infoArea,
+		.sessionsList__headline,
+		.sessionsList__createChatLink,
+		.sessionsList__createChatButton,
+		.sessionMenuPlaceholder,
+		.tag,
+		.text {
+			display: none !important;
+		}
+		
+		.sessionsList__header {
+			justify-content: center;
+			padding: 8px;
+			min-height: 48px;
+		}
+		
+		.sessionsListItem {
+			justify-content: center;
+			align-items: center;
+			margin-bottom: 4px;
+			
+			&__content {
+				display: flex;
+				justify-content: center;
+				align-items: center;
+				padding: 8px;
+				margin: 0 8px;
+				width: auto;
+				min-width: 48px;
+				min-height: 48px;
+				border-radius: 50%;
+			}
+			
+			&__row {
+				justify-content: center;
+				align-items: center;
+				width: auto;
+				margin-bottom: 0 !important;
+				
+				&:first-child {
+					display: none; /* Hide top row with postcode/topic/date */
+				}
+				
+				&:last-child {
+					display: none; /* Hide last message row */
+				}
+			}
+			
+			&__icon {
+				margin-right: 0 !important;
+				margin-bottom: 0 !important;
+				margin: 0;
+			}
+		}
+	}
 }

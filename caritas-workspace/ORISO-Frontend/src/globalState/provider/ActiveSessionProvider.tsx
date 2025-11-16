@@ -3,6 +3,7 @@ import { createContext, useMemo } from 'react';
 import { ExtendedSessionInterface } from '..';
 
 type ActiveSessionContextProps = {
+	children?: React.ReactNode;
 	activeSession: ExtendedSessionInterface | null;
 	reloadActiveSession?: () => void;
 	readActiveSession?: () => void;

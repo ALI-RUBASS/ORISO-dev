@@ -36,7 +36,18 @@ export const LegalSettings = ({ tenantId, disableManageToggle }: LegalSettingsPr
             fieldName={['content', 'privacy']}
             titleKey="privacy.title"
             subTitle={
-                <Trans i18nKey="privacy.subTitle" components={{ a: <a href="/datenschutz" target="_blank" /> }} />
+                <Trans
+                    i18nKey="privacy.subTitle"
+                    components={{
+                        a: (
+                            <a
+                                href="https://www.caritas-beratungundhilfe.de/datenschutz"
+                                target="_blank"
+                                rel="noreferrer"
+                            />
+                        ),
+                    }}
+                />
             }
             placeHolderKey="settings.privacy.placeholder"
             showConfirmationModal={{

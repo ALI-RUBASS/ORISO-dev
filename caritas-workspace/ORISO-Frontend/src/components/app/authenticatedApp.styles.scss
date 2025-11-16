@@ -133,8 +133,8 @@ a {
 			flex-direction: column;
 
 			@include breakpoint($fromLarge) {
-				width: $listWidth;
-				flex: 0 0 $listWidth;
+				width: auto;
+				flex: 0 0 auto;
 				transition: none;
 			}
 
@@ -186,7 +186,8 @@ a {
 			background-color: $background-lighter;
 
 			@include breakpoint($fromLarge) {
-				width: $contentWidth;
+				width: 100%; /* Use full available width */
+				flex: 1; /* Expand to fill space */
 				transition: none;
 			}
 

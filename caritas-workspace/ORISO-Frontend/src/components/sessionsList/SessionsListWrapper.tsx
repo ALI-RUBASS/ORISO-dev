@@ -1,6 +1,7 @@
 import * as React from 'react';
-import { useContext } from 'react';
+import { useContext, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
+import { ResizableHandle } from './ResizableHandle';
 import {
 	SESSION_LIST_TAB,
 	SESSION_LIST_TYPES,
@@ -31,10 +32,39 @@ export const SessionsListWrapper = ({
 	const { userData } = useContext(UserDataContext);
 	const { type } = useContext(SessionTypeContext);
 	const sessionListTab = useSearchParam<SESSION_LIST_TAB>('sessionListTab');
+	
+	// Resizable sidebar width
+	const [sidebarWidth, setSidebarWidth] = useState<number>(() => {
+		const saved = localStorage.getItem('sessionsList_width');
+		const width = saved ? parseInt(saved, 10) : 380;
+		
+		// Snap to proper size if in awkward range (prevent text truncation)
+		const ICON_ONLY_THRESHOLD = 280; // Match ResizableHandle
+		const MIN_WIDTH = 80;
+		const SNAP_THRESHOLD = 220; // Match ResizableHandle
+		
+		if (width > MIN_WIDTH && width < ICON_ONLY_THRESHOLD) {
+			// Snap to appropriate size
+			return width < SNAP_THRESHOLD ? MIN_WIDTH : ICON_ONLY_THRESHOLD;
+		}
+		
+		return width;
+	});
+	
+	// Icon-only mode when sidebar is small
+	const isIconOnly = sidebarWidth < 280; // Match threshold
+	
+	const handleResize = useCallback((width: number) => {
+		setSidebarWidth(width);
+		localStorage.setItem('sessionsList_width', width.toString());
+	}, []);
 
 	if (hasUserAuthority(AUTHORITIES.ASKER_DEFAULT, userData)) {
 		return (
-			<div className="sessionsList__wrapper">
+			<div 
+				className={`sessionsList__wrapper ${isIconOnly ? 'sessionsList__wrapper--iconOnly' : ''}`}
+				style={{ width: `${sidebarWidth}px`, position: 'relative' }}
+			>
 				<div
 					className="sessionsList__header"
 					data-cy="session-list-header"
@@ -50,12 +80,16 @@ export const SessionsListWrapper = ({
 					defaultLanguage={fixedLanguages[0]}
 					sessionTypes={sessionTypes}
 				/>
+				<ResizableHandle onResize={handleResize} />
 			</div>
 		);
 	}
 
 	return (
-		<div className="sessionsList__wrapper">
+		<div 
+			className={`sessionsList__wrapper ${isIconOnly ? 'sessionsList__wrapper--iconOnly' : ''}`}
+			style={{ width: `${sidebarWidth}px`, position: 'relative' }}
+		>
 			<div className="sessionsList__header" data-cy="session-list-header">
 				<h2
 					className="sessionsList__headline"
@@ -97,6 +131,7 @@ export const SessionsListWrapper = ({
 				defaultLanguage={fixedLanguages[0]}
 				sessionTypes={sessionTypes}
 			/>
+			<ResizableHandle onResize={handleResize} />
 		</div>
 	);
 };

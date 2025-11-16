@@ -432,7 +432,9 @@
 			"encryption": {
 				"error": "Message encrypted - error during decryption",
 				"text": "Message encrypted"
-			}
+			},
+			"showMore": "Show more",
+			"showLess": "Show less"
 		},
 		"roomNotFound": {
 			"notice": {
@@ -1083,6 +1085,10 @@
 			},
 			"linkLabel": "To the consulting topics"
 		},
+		"security": {
+			"headline": "Secure & Encrypted",
+			"description": "Your privacy is fully protected with end-to-end encryption."
+		},
 		"resend": {
 			"otp": {
 				"email": {
@@ -1176,6 +1182,8 @@
 				"headline": "Or make an appointment now"
 			}
 		},
+		"showLess": "Show less",
+		"showMore": "Show more",
 		"today": "Today",
 		"tomorrow": "Tomorrow",
 		"unread": "unread",
@@ -1800,7 +1808,6 @@
 				"label": "Repeat password",
 				"success": "Your password is identical."
 			},
-			
 			"subline": "To protect your anonymity, we advise you not to use your real name or initials.",
 			"username": {
 				"error": {

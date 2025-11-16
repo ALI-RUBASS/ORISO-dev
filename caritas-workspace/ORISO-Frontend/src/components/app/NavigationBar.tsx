@@ -326,10 +326,10 @@ export const NavigationBar = ({
 						>
 							<LocaleSwitch
 								showIcon={true}
-								className="navigation__title"
+								iconOnly={true}
 								updateUserData
 								vertical
-								iconSize={32}
+								iconSize={24}
 								label={translate('navigation.language')}
 								menuPlacement={MENUPLACEMENT_RIGHT}
 								selectRef={(el) => (ref_select.current = el)}

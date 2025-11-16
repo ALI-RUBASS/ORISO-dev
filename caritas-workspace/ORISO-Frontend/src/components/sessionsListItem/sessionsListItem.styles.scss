@@ -164,10 +164,13 @@ $icon-size-small: 16px;
 	}
 
 	&__icon {
-		width: $icon-size;
-		height: $icon-size;
-		min-width: $icon-size;
+		width: 32px;
+		height: 32px;
+		min-width: 32px;
 		margin-right: $grid-base;
+		display: flex;
+		align-items: center;
+		justify-content: center;
 
 		svg {
 			width: $icon-size;

@@ -100,7 +100,7 @@ export const GroupChatHeader = ({
 	const buttonStartVideoCall: ButtonItem = {
 		type: BUTTON_TYPES.SMALL_ICON,
 		title: t('videoCall.button.startVideoCall'),
-		smallIconBackgroundColor: isMobile ? 'transparent' : 'green',
+		smallIconBackgroundColor: isMobile ? 'transparent' : 'grey', // Modern purple/violet
 		icon: (
 			<StartButtonIcon
 				title={t('videoCall.button.startVideoCall')}
@@ -140,10 +140,10 @@ export const GroupChatHeader = ({
 						<Link
 							to={`/sessions/consultant/${sessionView}/${activeSession.item.groupId}/${activeSession.item.id}/groupChatInfo${sessionTabPath}`}
 						>
-							<h3>{activeSession.item.topic}</h3>
+							<h3>{typeof activeSession.item.topic === 'string' ? activeSession.item.topic : activeSession.item.topic?.name || ''}</h3>
 						</Link>
 					) : (
-						<h3>{activeSession.item.topic}</h3>
+						<h3>{typeof activeSession.item.topic === 'string' ? activeSession.item.topic : activeSession.item.topic?.name || ''}</h3>
 					)}
 				</div>
 

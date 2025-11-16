@@ -39,6 +39,7 @@ import useDebounceCallback from '../../hooks/useDebounceCallback';
 import { apiPostError, TError } from '../../api/apiPostError';
 import { useE2EE } from '../../hooks/useE2EE';
 import { MessageSubmitInterfaceSkeleton } from '../messageSubmitInterface/messageSubmitInterfaceSkeleton';
+import { EncryptionBanner } from './EncryptionBanner';
 
 const MessageSubmitInterfaceComponent = lazy(() =>
 	import('../messageSubmitInterface/messageSubmitInterfaceComponent').then(
@@ -95,6 +96,12 @@ export const SessionItemComponent = (props: SessionItemProps) => {
 	useEffect(() => {
 		setCanWriteMessage(type !== SESSION_LIST_TYPES.ENQUIRY);
 	}, [type, userData, activeSession]);
+
+	useEffect(() => {
+		if (messages && messages.length > 0 && !initialScrollCompleted) {
+			enableInitialScroll();
+		}
+	}, [messages, initialScrollCompleted]);
 
 	const resetUnreadCount = () => {
 		setNewMessages(0);
@@ -372,6 +379,7 @@ export const SessionItemComponent = (props: SessionItemProps) => {
 				onScroll={(e) => handleScroll(e)}
 				onDragEnter={onDragEnter}
 			>
+				<EncryptionBanner />
 				<div className={'message-holder'}>
 					{/* MATRIX MIGRATION: For Matrix sessions (no rid), skip E2EE ready check */}
 					{messages &&
@@ -413,8 +421,6 @@ export const SessionItemComponent = (props: SessionItemProps) => {
 									}}
 									{...message}
 								/>
-								{index === messages.length - 1 &&
-									enableInitialScroll()}
 							</React.Fragment>
 						))}
 					<div

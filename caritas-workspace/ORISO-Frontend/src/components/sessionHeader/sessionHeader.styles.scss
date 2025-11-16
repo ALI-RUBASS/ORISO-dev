@@ -7,7 +7,9 @@ $iconSize: 24px;
 	flex-direction: column;
 	align-items: center;
 	padding: $grid-base-two $grid-base-two;
+	min-height: 72px;
 	background-color: $session-header-background-color;
+	border-bottom: 1px solid rgba(0, 0, 0, 0.2);
 
 	@include breakpoint($fromMedium) {
 		padding: $grid-base-three;
@@ -80,6 +82,9 @@ $iconSize: 24px;
 	&__username {
 		cursor: pointer;
 		overflow: hidden;
+		display: flex;
+		align-items: center;
+		gap: 12px;
 
 		@include breakpoint($fromLarge) {
 			flex-grow: 1;
@@ -99,6 +104,7 @@ $iconSize: 24px;
 			white-space: nowrap;
 			overflow: hidden;
 			text-overflow: ellipsis;
+			margin: 0;
 		}
 
 		&--groupChat {
@@ -114,6 +120,8 @@ $iconSize: 24px;
 
 	&__videoCallButtons {
 		margin-right: 20px;
+		display: flex;
+		align-items: center; /* Vertically center video call buttons */
 	}
 
 	&__metaInfo {

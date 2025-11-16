@@ -41,11 +41,9 @@ import {
 	SESSION_COUNT
 } from '../../api';
 import { Button } from '../button/Button';
-import { WelcomeIllustration } from './SessionsListWelcomeIllustration';
 import { SessionListCreateChat } from './SessionListCreateChat';
 import './sessionsList.styles';
 import {
-	MAX_ITEMS_TO_SHOW_WELCOME_ILLUSTRATION,
 	SCROLL_PAGINATE_THRESHOLD
 } from './sessionsListConfig';
 import { Text } from '../text/Text';
@@ -175,12 +173,15 @@ export const SessionsList = ({
 			const wrapper = document.querySelector(
 				'.sessionsList__itemsWrapper'
 			);
+			if (!wrapper) {
+				return;
+			}
 			const firstItemId = document.querySelector('.sessionsListItem')
 				? document
 						.querySelector('.sessionsListItem')
 						.getAttribute('data-group-id')
 				: null;
-			const lastItemId = wrapper.lastElementChild.querySelector(
+			const lastItemId = wrapper.lastElementChild && wrapper.lastElementChild.querySelector(
 				'.sessionsListItem'
 			)
 				? wrapper.lastElementChild
@@ -744,97 +745,59 @@ export const SessionsList = ({
 				ref={listRef}
 				onScroll={handleListScroll}
 			>
-				{hasUserAuthority(AUTHORITIES.ASKER_DEFAULT, userData) &&
-					!isLoading &&
-					finalSessionsList.length <=
-						MAX_ITEMS_TO_SHOW_WELCOME_ILLUSTRATION && (
-						<WelcomeIllustration />
-					)}
+				{!isLoading &&
+					isCreateChatActive &&
+					type === SESSION_LIST_TYPES.MY_SESSION &&
+					hasUserAuthority(
+						AUTHORITIES.CREATE_NEW_CHAT,
+						userData
+					) && <SessionListCreateChat />}
 
-				<div
-					className={`sessionsList__itemsWrapper ${
-						isCreateChatActive ||
-						isLoading ||
-						finalSessionsList.length > 0
-							? ''
-							: 'sessionsList__itemsWrapper--centered'
-					}`}
-					data-cy="sessions-list-items-wrapper"
-					role="tablist"
-				>
-					{!isLoading &&
-						isCreateChatActive &&
-						type === SESSION_LIST_TYPES.MY_SESSION &&
-						hasUserAuthority(
-							AUTHORITIES.CREATE_NEW_CHAT,
-							userData
-						) && <SessionListCreateChat />}
-
-			{(!isLoading || finalSessionsList.length > 0) &&
-				finalSessionsList
-					.map((session) => buildExtendedSession(session, groupIdFromParam))
-					.sort(sortSessions)
-					.map(
-						(
-							activeSession: ExtendedSessionInterface,
-							index
-						) => (
+				{(!isLoading || finalSessionsList.length > 0) &&
+					finalSessionsList
+						.map((session) =>
+							buildExtendedSession(session, groupIdFromParam)
+						)
+						.sort(sortSessions)
+						.map((activeSession: ExtendedSessionInterface, index) => (
 							<ActiveSessionProvider
 								key={activeSession.item.id}
 								activeSession={activeSession}
 							>
 								<SessionListItemComponent
-									defaultLanguage={
-										defaultLanguage
-									}
-									itemRef={(el) =>
-										(ref_list_array.current[
-											index
-										] = el)
-									}
-									handleKeyDownLisItemContent={(
-										e
-									) =>
-										handleKeyDownLisItemContent(
-											e,
-											index
-										)
+									defaultLanguage={defaultLanguage}
+									itemRef={(el) => (ref_list_array.current[index] = el)}
+									handleKeyDownLisItemContent={(e) =>
+										handleKeyDownLisItemContent(e, index)
 									}
 									index={index}
 								/>
 							</ActiveSessionProvider>
-						)
-					)}
+						))}
 
-					{isLoading && <SessionsListSkeleton />}
+				{isLoading && <SessionsListSkeleton />}
 
-					{isReloadButtonVisible && (
-						<div className="sessionsList__reloadWrapper">
-							<Button
-								item={{
-									label: translate(
-										'sessionList.reloadButton.label'
-									),
-									function: '',
-									type: 'LINK',
-									id: 'reloadButton'
-								}}
-								buttonHandle={handleReloadButton}
-							/>
-						</div>
-					)}
-				</div>
-
-				{!isLoading &&
-					!isCreateChatActive &&
-					!isReloadButtonVisible &&
-					finalSessionsList.length === 0 && (
-						<EmptyListItem
-							sessionListTab={sessionListTab}
-							type={type}
+				{isReloadButtonVisible && (
+					<div className="sessionsList__reloadWrapper">
+						<Button
+							item={{
+								label: translate('sessionList.reloadButton.label'),
+								function: '',
+								type: 'LINK',
+								id: 'reloadButton'
+							}}
+							buttonHandle={handleReloadButton}
 						/>
-					)}
+					</div>
+				)}
 			</div>
+
+			{!isLoading &&
+				!isCreateChatActive &&
+				!isReloadButtonVisible &&
+				finalSessionsList.length === 0 && (
+					<EmptyListItem sessionListTab={sessionListTab} type={type} />
+				)}
 		</div>
 	);
 };

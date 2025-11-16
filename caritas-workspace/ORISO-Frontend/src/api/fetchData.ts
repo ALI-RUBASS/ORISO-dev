@@ -97,9 +97,11 @@ export const fetchData = ({
 
 		const csrfToken = generateCsrfToken();
 
+	// MATRIX MIGRATION: rcToken still required by backend for archive endpoints
+	// but no longer exists after Matrix migration. Send dummy token.
 		const rcHeaders = rcValidation
 			? {
-					...(getValueFromCookie('rc_token') && { rcToken: getValueFromCookie('rc_token') }),
+				rcToken: getValueFromCookie('rc_token') || 'matrix-migration-dummy-token',
 					...(getValueFromCookie('rc_uid') && { rcUserId: getValueFromCookie('rc_uid') })
 				}
 			: null;

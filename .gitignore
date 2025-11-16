@@ -1,6 +1,9 @@
 # Documents and client deliverables
 documents/
 
+# Nested Git repositories (track as regular files in root repo)
+# The .git folders in subdirectories will be tracked as files by root repo
+
 # IDE and editor files
 .vscode/
 .idea/

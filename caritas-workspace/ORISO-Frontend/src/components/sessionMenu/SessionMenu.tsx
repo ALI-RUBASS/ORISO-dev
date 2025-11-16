@@ -13,7 +13,9 @@ import {
 	SessionTypeContext,
 	useConsultingType,
 	UserDataContext,
-	ActiveSessionContext
+	ActiveSessionContext,
+	SessionsDataContext,
+	REMOVE_SESSIONS
 } from '../../globalState';
 import { SessionItemInterface } from '../../globalState/interfaces';
 import {
@@ -88,6 +90,7 @@ export const SessionMenu = (props: SessionMenuProps) => {
 	const { activeSession, reloadActiveSession } =
 		useContext(ActiveSessionContext);
 	const consultingType = useConsultingType(activeSession.item.consultingType);
+	const { dispatch: sessionsDispatch } = useContext(SessionsDataContext);
 
 	const [overlayItem, setOverlayItem] = useState(null);
 	const [flyoutOpen, setFlyoutOpen] = useState(null);
@@ -227,8 +230,17 @@ export const SessionMenu = (props: SessionMenuProps) => {
 		} else if (buttonFunction === OVERLAY_FUNCTIONS.LOGOUT) {
 			logout();
 		} else if (buttonFunction === OVERLAY_FUNCTIONS.ARCHIVE) {
-			apiPutArchive(activeSession.item.id)
+			const sessionId = activeSession.item.id;
+			const sessionGroupId = activeSession.item.groupId;
+			
+			apiPutArchive(sessionId)
 				.then(() => {
+					// Remove from current sessions list immediately
+					sessionsDispatch({
+						type: REMOVE_SESSIONS,
+						ids: sessionGroupId ? [sessionGroupId] : [sessionId]
+					});
+					
 					mobileListView();
 					history.push(listPath);
 				})
@@ -292,7 +304,7 @@ export const SessionMenu = (props: SessionMenuProps) => {
 	const buttonStartCall: ButtonItem = {
 		type: BUTTON_TYPES.SMALL_ICON,
 		title: translate('videoCall.button.startCall'),
-		smallIconBackgroundColor: 'green',
+		smallIconBackgroundColor: 'grey', // Modern purple/violet
 		icon: (
 			<CallOnIcon
 				title={translate('videoCall.button.startCall')}
@@ -304,7 +316,7 @@ export const SessionMenu = (props: SessionMenuProps) => {
 	const buttonStartVideoCall: ButtonItem = {
 		type: BUTTON_TYPES.SMALL_ICON,
 		title: translate('videoCall.button.startVideoCall'),
-		smallIconBackgroundColor: 'green',
+		smallIconBackgroundColor: 'grey', // Modern purple/violet
 		icon: (
 			<CameraOnIcon
 				title={translate('videoCall.button.startVideoCall')}

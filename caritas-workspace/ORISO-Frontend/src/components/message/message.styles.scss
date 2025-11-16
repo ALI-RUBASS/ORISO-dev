@@ -4,6 +4,8 @@ $message-lineheight: 21px;
 $message-attachment-color: $secondary !default;
 
 .messageItem {
+	display: flex;
+	flex-direction: column;
 	margin-bottom: $grid-base-two;
 	opacity: 0;
 	animation: appearMessageItem 500ms ease forwards;
@@ -36,9 +38,15 @@ $message-attachment-color: $secondary !default;
 	}
 
 	&--right {
+		align-items: flex-end;
+		
 		.messageItem__message {
 			margin: 4px 0;
 			border-radius: 12px 12px 0;
+		}
+		
+		.messageItem__divider {
+			align-self: center;
 		}
 	}
 
@@ -85,12 +93,16 @@ $message-attachment-color: $secondary !default;
 	}
 
 	&__messageWrap {
-		display: inline-flex;
-		flex-direction: column;
-		max-width: 71%;
+		display: flex;
+		flex-direction: row;
+		align-items: flex-start;
+		gap: 8px;
+		max-width: min(71%, 600px);
 
 		&--right {
-			text-align: right;
+			flex-direction: row-reverse;
+			align-self: flex-end;
+			margin-left: auto;
 		}
 
 		&--furtherSteps {
@@ -104,6 +116,31 @@ $message-attachment-color: $secondary !default;
 			max-width: 520px;
 			margin: 0 auto;
 		}
+	}
+	
+	&__avatar {
+		flex-shrink: 0;
+		
+		// Force Compound avatar to render properly
+		span[class*="_avatar_"] {
+			width: 32px !important;
+			height: 32px !important;
+			min-width: 32px !important;
+			min-height: 32px !important;
+			font-size: 16px !important;
+			font-weight: 600 !important;
+			display: flex !important;
+			align-items: center !important;
+			justify-content: center !important;
+			border-radius: 50% !important;
+		}
+	}
+	
+	&__content {
+		flex: 1;
+		min-width: 0;
+		display: flex;
+		flex-direction: column;
 	}
 
 	&__divider {
@@ -150,6 +187,14 @@ $message-attachment-color: $secondary !default;
 		text-align: left;
 		white-space: pre-wrap;
 		position: relative;
+		display: inline-block;
+		max-width: 100%;
+		min-width: 180px;
+		
+		/* Reduce padding for messages with attachments */
+		&:has(&__attachment) {
+			padding: 8px;
+		}
 
 		&--system {
 			margin: 4px 0;
@@ -201,16 +246,76 @@ $message-attachment-color: $secondary !default;
 
 		&__attachment {
 			display: flex;
-			align-items: center;
-			background-color: $dark-grey;
-			border-radius: $icon-size;
-			color: $message-attachment-color;
-			padding: 6px $grid-base-three 5px 12px;
-			max-width: 350px;
+			flex-direction: column;
+			margin-top: 4px;
+			border: 1px solid #E3E8F0;
+			border-radius: 8px;
+			overflow: hidden;
+			max-width: 400px;
+			background: transparent;
+			transition: all 0.2s ease;
+			
+			&:hover {
+				border-color: #0086E6;
+				box-shadow: 0 2px 8px rgba(0, 134, 230, 0.15);
+			}
+			
+			&__preview {
+				background: #000;
+				padding: 0;
+				margin: 0;
+				width: 100%;
+				
+				img {
+					width: 100%;
+					max-width: 100%;
+					height: auto;
+					display: block;
+					margin: 0;
+				}
+			}
+			
+			&__info {
+				display: flex;
+				flex-direction: row;
+				align-items: center;
+				gap: 12px;
+				padding: 12px;
+				background: #F4F6FA;
+			}
+			
+			&__filename {
+				font-size: 14px;
+				font-weight: 500;
+				color: #17191C;
+				margin: 0 !important;
+			}
+			
+			&__meta {
+				font-size: 12px;
+				color: #8D97A5;
+				margin: 0 !important;
+			}
+			
+			&__title {
+				flex: 1;
+				min-width: 0;
+				display: flex;
+				flex-direction: column;
+			}
 
-			&__icon svg {
-				* {
-					fill: $message-attachment-color;
+			&__icon {
+				width: 32px;
+				height: 32px;
+				flex-shrink: 0;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				
+				svg {
+					width: 24px;
+					height: 24px;
+					color: #737D8C;
 				}
 			}
 
@@ -218,47 +323,8 @@ $message-attachment-color: $secondary !default;
 				margin-right: $grid-base;
 			}
 
-			&__download {
-				display: flex;
-				cursor: pointer;
-				flex-direction: row;
-				margin-top: $grid-base;
-				background: transparent;
-				border: none;
-
-				p {
-					margin: 0;
-					color: var(--text-color-contrast-switch, $secondary);
-					line-height: $icon-size;
-					text-decoration: underline;
-
-					&.decrypting,
-					&.decryptionError {
-						color: var(--text-color-contrast-switch, $primary);
-						text-decoration: none;
-					}
-				}
-
-				&:hover p {
-					color: var(--text-color-contrast-switch, $primary);
-				}
-
-				svg * {
-					fill: var(--text-color-contrast-switch, $primary);
-				}
-			}
-
 			p {
 				margin: 0;
-			}
-
-			&__icon,
-			&__download {
-				svg {
-					width: $icon-size;
-					height: $icon-size;
-					margin-right: $grid-base;
-				}
 			}
 
 			&__meta {
@@ -274,28 +340,6 @@ $message-attachment-color: $secondary !default;
 
 			.messageItem__message__attachment {
 				background-color: $white;
-
-				&__download {
-					svg * {
-						fill: var(--text-color-contrast-switch, $white);
-					}
-
-					svg {
-						&:hover {
-							* {
-								fill: var(--text-color-contrast-switch, $white);
-							}
-						}
-					}
-
-					p {
-						color: var(--text-color-contrast-switch, $white);
-
-						&:hover {
-							color: var(--text-color-contrast-switch, $white);
-						}
-					}
-				}
 			}
 
 			a,
@@ -521,5 +565,54 @@ $message-attachment-color: $secondary !default;
 	80% {
 		transform: scale(0);
 		opacity: 0;
+	}
+}
+
+// Expand/Collapse button for long messages
+.messageItem__expandBtn {
+	display: inline-block;
+	margin-top: 8px;
+	padding: 4px 12px;
+	background: transparent;
+	border: none;
+	font-size: 13px;
+	font-weight: bold;
+	cursor: pointer;
+	text-decoration: underline;
+	transition: all 0.2s ease;
+	position: relative;
+	z-index: 10;
+	pointer-events: auto;
+	
+	// Default color for incoming messages (red)
+	&--incoming {
+		color: #e74c3c; // Red color for incoming messages
+		
+		&:hover {
+			color: #c0392b;
+			text-decoration: none;
+		}
+		
+		&:focus {
+			outline: 2px solid #e74c3c;
+			outline-offset: 2px;
+			border-radius: 4px;
+		}
+	}
+	
+	// Color for outgoing messages (myMessage - white)
+	&--myMessage {
+		color: #ffffff; // White color for outgoing messages
+		
+		&:hover {
+			color: #e6e6e6;
+			text-decoration: none;
+		}
+		
+		&:focus {
+			outline: 2px solid #ffffff;
+			outline-offset: 2px;
+			border-radius: 4px;
+		}
 	}
 }

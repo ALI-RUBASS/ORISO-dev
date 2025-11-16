@@ -9,31 +9,42 @@ $session-scroll-to-bottom-radius: $button-border-radius !default;
 .session,
 .enquiry__wrapper {
 	position: relative;
-	width: 100vw;
+	flex: 1;
 	display: flex;
 	flex-direction: column;
-	justify-content: stretch;
-	align-items: stretch;
 	min-height: 0;
-	background-color: $session-background-color;
+	min-width: 0;
+	background-color: #ffffff;
 	overflow: hidden;
+	
+	.messageSubmit__wrapper {
+		position: absolute;
+		bottom: 0;
+		left: 0;
+		right: 0;
+		z-index: 1000;
+	}
 
-	& > * {
-		flex: 0;
+	& > div:first-child {
+		flex: 0 0 auto; /* Header stays fixed height */
+	}
+	
+	& > div:nth-child(2) {
+		flex: 1; /* Content takes remaining space */
+		min-height: 0;
+		position: relative;
 	}
 
 	.session__content.drag-in-progress * {
 		pointer-events: none;
 	}
 
-	@include breakpoint($fromLarge) {
-		width: 100%;
-	}
-
 	&__wrapper {
 		flex: 1;
 		width: 100%;
 		flex-direction: row;
+		display: flex;
+		min-width: 0;
 	}
 
 	.messageSubmit__wrapper {
@@ -70,24 +81,22 @@ $session-scroll-to-bottom-radius: $button-border-radius !default;
 	}
 
 	&__content {
-		flex: 1;
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
 		overflow-x: hidden;
 		overflow-y: auto;
-		padding: $grid-base-three $grid-base-two $grid-base-two;
+		padding: $grid-base-three $grid-base-two 200px;
 		background-color: $session-content-background-color;
 
 		@include breakpoint($fromMedium) {
-			padding: $grid-base-three $grid-base-three $grid-base-two;
+			padding: $grid-base-three $grid-base-three 200px;
 		}
 	}
 
-	&__submit-interface {
-		transition: box-shadow 0.3s ease;
-
-		&--scrolled-up {
-			box-shadow: 0 -2px 8px 0 rgba($black, 0.1);
-		}
-	}
+	// Shadow removed from submit interface for clean Element-like UI
 
 	&__scrollToBottom {
 		position: fixed;

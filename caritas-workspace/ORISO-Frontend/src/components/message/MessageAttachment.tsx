@@ -153,106 +153,139 @@ export const MessageAttachment = (props: MessageAttachmentProps) => {
 		return null;
 	}, []);
 
+	// Helper to build URL - if title_link is already a full URL, use it as-is
+	const buildUrl = useCallback((link: string) => {
+		if (!link) return '';
+		// If link already starts with http:// or https://, it's a full URL
+		if (link.startsWith('http://') || link.startsWith('https://')) {
+			return link;
+		}
+		// Otherwise, prepend apiUrl
+		return apiUrl + link;
+	}, []);
+
+	// Check if it's an image to display preview
+	const isImage = props.file.type?.startsWith('image/') || props.attachment.type === 'image';
+	const imageUrl = isImage ? buildUrl(props.attachment.title_link) : null;
+
+	// For non-encrypted files, wrap in download link
+	const downloadUrl = buildUrl(props.attachment.title_link);
+	
 	return (
-		<div
-			className={
-				props.hasRenderedMessage
-					? 'messageItem__message--withAttachment'
-					: ''
-			}
-		>
-			<div className="messageItem__message__attachment">
-				<span className="messageItem__message__attachment__icon">
-					{attachmentStatus === IS_DECRYPTING ? (
-						<LoadingSpinner />
-					) : (
-						getAttachmentIcon(props.file.type)
-					)}
-				</span>
-				<span className="messageItem__message__attachment__title">
-					<p>{props.attachment.title}</p>
-					<p className="messageItem__message__attachment__meta">
-						{translate(
-							ATTACHMENT_TRANSLATE_FOR_TYPE[props.file.type]
-						)}{' '}
-						{props.attachment.image_size
-							? `| ${
-									(
-										getAttachmentSizeMBForKB(
-											props.t === 'e2e'
-												? Math.floor(
-														(props.attachment
-															.image_size -
-															KEY_ID_LENGTH -
-															MAX_PREFIX_LENGTH -
-															VERSION_SEPERATOR.length -
-															ENCRYPTION_VERSION_ACTIVE.length -
-															100) /
-															2 -
-															VECTOR_LENGTH * 2
-													) * 1000
-												: props.attachment.image_size *
-														1000
-										) / 1000
-									).toFixed(2) +
-									translate('attachments.type.label.mb')
-								}`
-							: null}
-					</p>
-				</span>
-			</div>
-			{props.t === 'e2e' && (
-				<>
-					{encryptedFile &&
-					attachmentStatus === DECRYPTION_FINISHED ? (
-						<a
-							href={encryptedFile}
-							download={props.file.name}
-							rel="noopener noreferer"
-							className="messageItem__message__attachment__download"
-						>
-							<DownloadIcon
-								title={translate('app.download')}
-								aria-label={translate('app.download')}
-							/>
-							<p>{translate('e2ee.attachment.save')}</p>
-						</a>
-					) : (
-						<button
-							onClick={() =>
-								decryptFile(
-									apiUrl + props.attachment.title_link
-								)
-							}
-							className="messageItem__message__attachment__download"
-						>
-							<p
-								className={clsx({
-									decrypting:
-										attachmentStatus === IS_DECRYPTING,
-									decryptionError:
-										attachmentStatus === DECRYPTION_ERROR
-								})}
-							>
-								{translate(
-									`e2ee.attachment.${attachmentStatus}`
-								)}
-							</p>
-						</button>
-					)}
-				</>
-			)}
-			{props.t !== 'e2e' && (
+		<>
+			{props.t !== 'e2e' ? (
 				<a
-					href={apiUrl + props.attachment.title_link}
+					href={downloadUrl}
 					download={props.file.name}
 					rel="noopener noreferrer"
-					className="messageItem__message__attachment__download"
+					className="messageItem__message__attachment"
+					style={{ textDecoration: 'none', color: 'inherit', cursor: 'pointer' }}
 				>
-					<DownloadIcon />
-					<p>{translate('attachments.download.label')}</p>
+					{/* Show image preview for image files */}
+					{isImage && imageUrl && (
+						<div className="messageItem__message__attachment__preview">
+							<img 
+								src={imageUrl} 
+								alt={props.attachment.title}
+							/>
+						</div>
+					)}
+					
+					{/* File info BELOW image */}
+					<div className="messageItem__message__attachment__info">
+						<span className="messageItem__message__attachment__icon">
+							{!isImage && getAttachmentIcon(props.file.type)}
+						</span>
+						<span className="messageItem__message__attachment__title">
+							<p className="messageItem__message__attachment__filename">{props.attachment.title}</p>
+							<p className="messageItem__message__attachment__meta">
+								{translate(
+									ATTACHMENT_TRANSLATE_FOR_TYPE[props.file.type]
+								)}{' '}
+								{props.attachment.image_size
+									? `| ${
+											(
+												getAttachmentSizeMBForKB(
+													props.attachment.image_size * 1000
+												) / 1000
+											).toFixed(2) +
+											translate('attachments.type.label.mb')
+										}`
+									: null}
+							</p>
+						</span>
+					</div>
 				</a>
+			) : (
+				// Encrypted file - clickable to decrypt/download
+				encryptedFile && attachmentStatus === DECRYPTION_FINISHED ? (
+					<a
+						href={encryptedFile}
+						download={props.file.name}
+						rel="noopener noreferrer"
+						className="messageItem__message__attachment"
+						style={{ textDecoration: 'none', color: 'inherit', cursor: 'pointer' }}
+					>
+						{isImage && (
+							<div className="messageItem__message__attachment__preview">
+								<img src={encryptedFile} alt={props.attachment.title} />
+							</div>
+						)}
+						
+						<div className="messageItem__message__attachment__info">
+							<span className="messageItem__message__attachment__icon">
+								{!isImage && getAttachmentIcon(props.file.type)}
+							</span>
+							<span className="messageItem__message__attachment__title">
+								<p className="messageItem__message__attachment__filename">{props.attachment.title}</p>
+								<p className="messageItem__message__attachment__meta">
+									{translate(ATTACHMENT_TRANSLATE_FOR_TYPE[props.file.type])}{' '}
+									{props.attachment.image_size
+										? `| ${
+												(
+													getAttachmentSizeMBForKB(
+														Math.floor(
+															(props.attachment.image_size -
+																KEY_ID_LENGTH -
+																MAX_PREFIX_LENGTH -
+																VERSION_SEPERATOR.length -
+																ENCRYPTION_VERSION_ACTIVE.length -
+																100) /
+																2 -
+																VECTOR_LENGTH * 2
+														) * 1000
+													) / 1000
+												).toFixed(2) + translate('attachments.type.label.mb')
+											}`
+										: null}
+								</p>
+							</span>
+						</div>
+					</a>
+				) : (
+					<div 
+						className="messageItem__message__attachment"
+						onClick={() => attachmentStatus === ENCRYPTED && decryptFile(buildUrl(props.attachment.title_link))}
+						style={{ cursor: attachmentStatus === ENCRYPTED ? 'pointer' : 'default' }}
+					>
+						<div className="messageItem__message__attachment__info">
+							<span className="messageItem__message__attachment__icon">
+								{attachmentStatus === IS_DECRYPTING ? (
+									<LoadingSpinner />
+								) : (
+									getAttachmentIcon(props.file.type)
+								)}
+							</span>
+							<span className="messageItem__message__attachment__title">
+								<p className="messageItem__message__attachment__filename">{props.attachment.title}</p>
+								<p className="messageItem__message__attachment__meta">
+									{translate(`e2ee.attachment.${attachmentStatus}`)}
+								</p>
+							</span>
+						</div>
+					</div>
+				)
 			)}
-		</div>
+		</>
 	);
 };
