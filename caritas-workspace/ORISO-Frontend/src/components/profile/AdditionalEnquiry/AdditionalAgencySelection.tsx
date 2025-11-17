@@ -60,7 +60,7 @@ export const AdditionalAgencySelection = (
 					setProposedAgencies(agencies);
 					// Only set default agency if none is selected yet
 					if (!selectedAgency) {
-						setSelectedAgency(agencies[0]);
+					setSelectedAgency(agencies[0]);
 					}
 				})
 				.catch((err: any) => {
@@ -153,16 +153,16 @@ export const AdditionalAgencySelection = (
 						{proposedAgencies ? (
 							proposedAgencies.map(
 								(proposedAgency: AgencyDataInterface) => (
-								<AgencyRadioSelect
-									key={`agency-${proposedAgency.id}`}
-									agency={proposedAgency}
+									<AgencyRadioSelect
+										key={`agency-${proposedAgency.id}`}
+										agency={proposedAgency}
 									checkedValue={selectedAgency?.id.toString() || ''}
-									showTooltipAbove={true}
+										showTooltipAbove={true}
 									onChange={(agency) => {
 										console.log('🔵 Radio clicked, setting agency:', agency.id);
 										setSelectedAgency(agency);
 									}}
-								/>
+									/>
 								)
 							)
 						) : (

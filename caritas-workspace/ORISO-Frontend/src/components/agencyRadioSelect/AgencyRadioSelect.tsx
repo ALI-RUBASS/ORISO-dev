@@ -42,15 +42,15 @@ export const AgencyRadioSelect = ({
 				})}
 				onClick={() => console.log('🟡 RadioContainer clicked!', agency.id)}
 			>
-			<RadioButton
-				name="agencySelection"
+				<RadioButton
+					name="agencySelection"
 				handleRadioButton={(e) => onChange && onChange(agency)}
-				onKeyDown={(e: KeyboardEvent) => onKeyDown && onKeyDown(e)}
-				type="smaller"
-				value={agencyIdAsString}
-				checked={agencyIdAsString === checkedValue}
-				inputId={`agency-${agencyIdAsString}`}
-			>
+					onKeyDown={(e: KeyboardEvent) => onKeyDown && onKeyDown(e)}
+					type="smaller"
+					value={agencyIdAsString}
+					checked={agencyIdAsString === checkedValue}
+					inputId={`agency-${agencyIdAsString}`}
+				>
 					{t([`agency.${agencyIdAsString}.name`, agency.name])}
 				</RadioButton>
 
