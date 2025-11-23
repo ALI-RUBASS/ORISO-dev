@@ -282,7 +282,8 @@ public class CreateChatFacade {
       session.setGroupId(matrixRoomId);
       sessionService.saveSession(session);
 
-      chat.setGroupId(matrixRoomId);
+      chat.setGroupId(matrixRoomId); // Set rc_group_id for backwards compatibility
+      chat.setMatrixRoomId(matrixRoomId); // Set matrix_room_id for Matrix
       chatService.saveChat(chat);
 
       // Get consultant token for inviting others
@@ -291,7 +292,7 @@ public class CreateChatFacade {
 
       // IMPORTANT: Add the CREATOR to group_chat_participant table!
       GroupChatParticipant creatorParticipant = new GroupChatParticipant();
-      creatorParticipant.setChatId(sessionId); // Link to session ID
+      creatorParticipant.setChatId(chatId); // Link to CHAT ID (not session ID!)
       creatorParticipant.setConsultantId(consultant.getId());
       groupChatParticipantRepository.save(creatorParticipant);
       log.info("Added creator consultant {} to group_chat_participant", consultant.getId());

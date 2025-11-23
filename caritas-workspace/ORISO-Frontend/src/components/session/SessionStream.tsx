@@ -116,8 +116,9 @@ export const SessionStream = ({
 
 		abortController.current = new AbortController();
 
-		// MATRIX MIGRATION: Use Matrix API if no rcGroupId
-		if (!activeSession.rid && activeSession.item?.id) {
+		// MATRIX MIGRATION: Use Matrix API if no rcGroupId OR if rcGroupId is a Matrix room ID (starts with '!')
+		const isMatrixRoom = activeSession.rid && activeSession.rid.startsWith('!');
+		if ((!activeSession.rid || isMatrixRoom) && activeSession.item?.id) {
 			const sessionId = activeSession.item.id;
 			const apiUrlBase = (window as any).Cypress
 				? (window as any).Cypress.env('REACT_APP_API_URL')

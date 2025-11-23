@@ -55,7 +55,10 @@ export const GroupChatHeader = ({
 		useState<boolean>(false);
 	const { t } = useTranslation(['common', 'consultingTypes', 'agencies']);
 	const { activeSession } = useContext(ActiveSessionContext);
-	const { users, moderators } = useContext(RocketChatUsersOfRoomContext);
+	// MATRIX MIGRATION: RocketChatUsersOfRoomContext may be null for Matrix rooms, use fallback
+	const rcUsersContext = useContext(RocketChatUsersOfRoomContext);
+	const users = rcUsersContext?.users || [];
+	const moderators = rcUsersContext?.moderators || [];
 	const { userData } = useContext(UserDataContext);
 	const { type, path: listPath } = useContext(SessionTypeContext);
 	const sessionListTab = useSearchParam<SESSION_LIST_TAB>('sessionListTab');

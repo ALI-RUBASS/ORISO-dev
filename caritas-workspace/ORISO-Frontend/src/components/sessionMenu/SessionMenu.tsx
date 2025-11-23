@@ -537,7 +537,9 @@ const SessionMenuFlyoutGroup = ({
 	const { t: translate } = useTranslation();
 	const { userData } = useContext(UserDataContext);
 	const { activeSession } = useContext(ActiveSessionContext);
-	const { moderators } = useContext(RocketChatUsersOfRoomContext);
+	// MATRIX MIGRATION: RocketChatUsersOfRoomContext may be null for Matrix rooms, use fallback
+	const rcUsersContext = useContext(RocketChatUsersOfRoomContext);
+	const moderators = rcUsersContext?.moderators || [];
 
 	return (
 		<>

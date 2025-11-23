@@ -414,7 +414,10 @@ const SubscriberList = ({
 	const { t: translate } = useTranslation();
 
 	const { activeSession } = useContext(ActiveSessionContext);
-	const { users, moderators } = useContext(RocketChatUsersOfRoomContext);
+	// MATRIX MIGRATION: RocketChatUsersOfRoomContext may be null for Matrix rooms, use fallback
+	const rcUsersContext = useContext(RocketChatUsersOfRoomContext);
+	const users = rcUsersContext?.users || [];
+	const moderators = rcUsersContext?.moderators || [];
 
 	const [isUserBanOverlayOpen, setIsUserBanOverlayOpen] =
 		useState<boolean>(false);
