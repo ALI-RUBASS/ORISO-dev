@@ -375,115 +375,86 @@ export const SessionStream = ({
 			const sessionId = activeSession.item.id;
 			console.log('🔷 Setting up Matrix real-time listener for room:', matrixRoomId);
 
-			// STEP 1: Register this room with backend for LiveService notifications
-			const csrfToken = getValueFromCookie('csrfToken');
-			const accessToken = getValueFromCookie('keycloak');
-			
-			fetch(`${apiUrl}/service/matrix/sync/register/${sessionId}`, {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-					'Authorization': `Bearer ${accessToken}`,
-					'X-CSRF-TOKEN': csrfToken || '',
-					'X-CSRF-Bypass': 'true',  // Bypass CSRF for this endpoint
-					'X-WHITELIST-HEADER': csrfToken || ''
-				},
-				credentials: 'include'
-			}).then(response => {
-				if (response.ok) {
-					console.log('✅ Matrix room registered with backend for LiveService notifications');
-					return response.json();
-				} else {
-					console.error('❌ Failed to register room with backend, status:', response.status);
-					throw new Error(`Registration failed: ${response.status}`);
-				}
-			}).then(data => {
-				console.log('✅ Registration response:', data);
-			}).catch(e => {
-				console.error('❌ Error registering room:', e);
-			});
-
-			// STEP 2: Listen to LiveService events (PRIMARY - instant via WebSocket!)
-			const handleLiveServiceMessage = (data: any) => {
-				console.log('🔔 LiveService event received - refreshing messages!');
-				fetchSessionMessages().then(() => {
-					console.log('✅ Messages refreshed via LiveService');
-				}).catch((e) => {
-					console.error('❌ Failed to refresh:', e);
-				});
-			};
-
-			// Register with message event emitter
-			messageEventEmitter.on(handleLiveServiceMessage);
-			console.log('📡 Listening to LiveService events');
-
-			// STEP 3: Get Matrix client for frontend real-time events (BACKUP)
+			// Get Matrix client for frontend real-time events (like Element!)
 			const matrixClientService = (window as any).matrixClientService;
 			if (!matrixClientService) {
-				console.warn('⚠️ Matrix client not initialized - will rely on LiveService only');
+				console.warn('⚠️ Matrix client not initialized - messages will not appear in real-time');
 			} else {
 				const matrixClient = matrixClientService.getClient();
 				if (matrixClient) {
-					// Handler for Room.timeline events (BACKUP if LiveService fails)
-					const handleMatrixTimeline = (event: any, room: any, toStartOfTimeline: boolean) => {
-						if (toStartOfTimeline || room.roomId !== matrixRoomId) {
-							return;
-						}
+				// Handler for Room.timeline events - INSTANT local echo like Element!
+				const handleMatrixTimeline = (event: any, room: any, toStartOfTimeline: boolean) => {
+					if (toStartOfTimeline || room.roomId !== matrixRoomId) {
+						return;
+					}
 
-						const eventType = event.getType();
-						if (eventType !== 'm.room.message') {
-							return;
-						}
+					const eventType = event.getType();
+					if (eventType !== 'm.room.message') {
+						return;
+					}
 
-						console.log('📬 Matrix message received (frontend backup)!');
-						
-						// Refresh messages (backup)
-						fetchSessionMessages().then(() => {
-							console.log('✅ Messages refreshed (via frontend Matrix)');
-						}).catch((e) => {
-							console.error('❌ Failed to refresh:', e);
-						});
+					console.log('📬 Matrix message received - adding to UI instantly!', event);
+					
+					// Get the message content from the event
+					const content = event.getContent();
+					const sender = event.getSender();
+					const timestamp = event.getTs();
+					const eventId = event.getId();
+					
+					// Create a message object in the same format as backend messages
+					const newMessage = {
+						_id: eventId,
+						rid: matrixRoomId,
+						msg: content.body || '',
+						ts: new Date(timestamp).toISOString(),
+						u: {
+							_id: sender,
+							username: sender.split(':')[0].substring(1), // Extract username from @user:domain
+							name: sender.split(':')[0].substring(1)
+						},
+						_updatedAt: new Date(timestamp).toISOString(),
+						t: content.msgtype === 'm.text' ? undefined : content.msgtype
 					};
-
-					// Subscribe to Matrix Room.timeline events (as backup)
-					console.log('📡 Subscribing to Matrix Room.timeline (backup)');
-					(matrixClient as any).on('Room.timeline', handleMatrixTimeline);
-
-					// Cleanup Matrix listener
-					return () => {
-						console.log('🧹 Cleaning up Matrix and LiveService listeners');
-						(matrixClient as any).off('Room.timeline', handleMatrixTimeline);
-						messageEventEmitter.off(handleLiveServiceMessage);
+					
+					console.log('📬 New message object:', newMessage);
+					
+					// Add the new message to the existing messages
+					setMessagesItem((prevMessages) => {
+						if (!prevMessages || !prevMessages.messages) {
+							return { messages: prepareMessages([newMessage]) };
+						}
 						
-						// Unregister room from backend
-						fetch(`${apiUrl}/service/matrix/sync/register/${sessionId}`, {
-							method: 'DELETE',
-							headers: {
-								'Authorization': `Bearer ${accessToken}`,
-								'X-CSRF-TOKEN': csrfToken || ''
-							},
-							credentials: 'include'
-						}).catch(e => console.warn('Could not unregister room:', e));
-					};
-				}
+						// Check if message already exists (avoid duplicates)
+						const messageExists = prevMessages.messages.some(
+							(msg) => msg._id === eventId
+						);
+						
+						if (messageExists) {
+							console.log('📬 Message already exists, skipping');
+							return prevMessages;
+						}
+						
+						// Add new message to the end
+						const updatedMessages = [...prevMessages.messages];
+						const preparedNewMessages = prepareMessages([newMessage]);
+						updatedMessages.push(...preparedNewMessages);
+						
+						console.log('📬 Updated messages count:', updatedMessages.length);
+						return { messages: updatedMessages };
+					});
+				};
+
+				// Subscribe to Matrix Room.timeline events for instant updates!
+				console.log('📡 Subscribing to Matrix Room.timeline for instant message updates');
+				(matrixClient as any).on('Room.timeline', handleMatrixTimeline);
+
+				// Cleanup Matrix listener
+				return () => {
+					console.log('🧹 Cleaning up Matrix listener');
+					(matrixClient as any).off('Room.timeline', handleMatrixTimeline);
+				};
 			}
-
-			// Cleanup just LiveService listener
-			return () => {
-				console.log('🧹 Cleaning up LiveService listener');
-				messageEventEmitter.off(handleLiveServiceMessage);
-				
-				// Unregister room from backend
-				fetch(`${apiUrl}/service/matrix/sync/register/${sessionId}`, {
-					method: 'DELETE',
-					headers: {
-						'Authorization': `Bearer ${accessToken}`,
-						'X-CSRF-TOKEN': csrfToken || '',
-						'X-CSRF-Bypass': 'true'
-					},
-					credentials: 'include'
-				}).catch(e => console.warn('Could not unregister room:', e));
-			};
+		}
 		}
 	}, [activeSession.rid, activeSession.item?.matrixRoomId, activeSession.item?.id, fetchSessionMessages, apiUrl]);
 
