@@ -188,6 +188,7 @@ export const SessionListItemComponent = ({
 		console.log('🖱️ CARD CLICKED:', {
 			sessionId: activeSession.item.id,
 			groupId: activeSession.item.groupId,
+			isGroup: activeSession.isGroup,
 			listPath,
 			isEmptyEnquiry: activeSession.isEmptyEnquiry,
 			isAsker: hasUserAuthority(AUTHORITIES.ASKER_DEFAULT, userData)
@@ -195,10 +196,14 @@ export const SessionListItemComponent = ({
 		
 		// For sessions without groupId (Matrix migration), navigate by session ID
 		if (activeSession.item.id !== undefined) {
-			if (activeSession.item.groupId) {
-				// Original behavior: navigate with groupId
+			// Check if groupId looks like a Matrix room ID (starts with ! or contains :)
+			const isMatrixRoomId = activeSession.item.groupId && 
+				(activeSession.item.groupId.startsWith('!') || activeSession.item.groupId.includes(':'));
+			
+			if (activeSession.item.groupId && !isMatrixRoomId) {
+				// Original RocketChat behavior: navigate with groupId
 				const targetPath = `${listPath}/${activeSession.item.groupId}/${activeSession.item.id}${getSessionListTab()}`;
-				console.log('🚀 Navigating with groupId:', targetPath);
+				console.log('🚀 Navigating with RocketChat groupId:', targetPath);
 				history.push(targetPath);
 			} else if (
 				hasUserAuthority(AUTHORITIES.ASKER_DEFAULT, userData) &&
@@ -209,9 +214,9 @@ export const SessionListItemComponent = ({
 				console.log('🚀 Navigating to write view:', targetPath);
 				history.push(targetPath);
 			} else {
-				// MATRIX MIGRATION FIX: Navigate by session ID even without groupId
+				// MATRIX MIGRATION FIX: Navigate by session ID for Matrix rooms or sessions without groupId
 				const targetPath = `${listPath}/session/${activeSession.item.id}${getSessionListTab()}`;
-				console.log('🚀 Navigating by session ID only:', targetPath);
+				console.log('🚀 Navigating by session ID (Matrix or no groupId):', targetPath);
 				history.push(targetPath);
 			}
 		}

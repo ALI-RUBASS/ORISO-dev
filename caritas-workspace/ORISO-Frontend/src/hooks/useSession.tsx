@@ -29,7 +29,10 @@ export const useSession = (
 	}, [session]);
 
 	const loadSession = useCallback(() => {
+		console.log('🔍 useSession.loadSession CALLED:', { rid, sessionId, chatId });
+		
 		if (abortController.current) {
+			console.log('🔍 useSession: Aborting previous request');
 			abortController.current.abort();
 		}
 
@@ -38,20 +41,24 @@ export const useSession = (
 		let promise;
 
 		if (!rid && !sessionId && !chatId) {
+			console.log('⚠️ useSession: No rid, sessionId, or chatId provided - returning early');
 			return;
 		}
 
 		if (chatId) {
+			console.log('🔍 useSession: Loading by chatId:', chatId);
 			promise = apiGetChatRoomById(
 				chatId,
 				abortController.current.signal
 			);
 		} else if (sessionId) {
+			console.log('🔍 useSession: Loading by sessionId:', sessionId);
 			promise = apiGetSessionRoomBySessionId(
 				sessionId,
 				abortController.current.signal
 			);
 		} else {
+			console.log('🔍 useSession: Loading by rid (groupId):', rid);
 			promise = apiGetSessionRoomsByGroupIds(
 				[rid],
 				abortController.current.signal
@@ -60,24 +67,43 @@ export const useSession = (
 
 		return promise
 			.then(({ sessions: [activeSession] }) => {
+				console.log('✅ useSession: API response received:', { 
+					hasSession: !!activeSession,
+					sessionData: activeSession 
+				});
+				
 				if (activeSession) {
-					setSession(buildExtendedSession(activeSession, rid));
+					const extendedSession = buildExtendedSession(activeSession, rid);
+					console.log('✅ useSession: Extended session built:', extendedSession);
+					setSession(extendedSession);
+				} else {
+					console.log('⚠️ useSession: No session in response');
 				}
 				setReady(true);
 			})
 			.catch((e) => {
+				console.log('❌ useSession: Error loading session:', {
+					error: e,
+					message: e.message,
+					isAbort: e.message === FETCH_ERRORS.ABORT,
+					repetitiveId: repetitiveId.current
+				});
+				
 				if (e.message === FETCH_ERRORS.ABORT) {
 					return;
 				}
 
 				if (repetitiveId.current) {
+					console.log('🔄 useSession: Retrying with repetitiveId:', repetitiveId.current);
 					return apiGetChatRoomById(repetitiveId.current).then(
 						({ sessions: [session] }) => {
+							console.log('✅ useSession: Repetitive session loaded:', session);
 							setSession(buildExtendedSession(session, rid));
 							setReady(true);
 						}
 					);
 				}
+				console.log('❌ useSession: Setting session to null');
 				setSession(null);
 				setReady(true);
 			});

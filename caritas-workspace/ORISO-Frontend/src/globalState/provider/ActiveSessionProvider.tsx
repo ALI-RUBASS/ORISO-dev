@@ -14,9 +14,14 @@ export const ActiveSessionContext =
 
 export const ActiveSessionProvider: React.FC<ActiveSessionContextProps> = ({
 	children,
-	...params
+	activeSession,
+	reloadActiveSession,
+	readActiveSession
 }) => {
-	const contextValue = useMemo(() => params, [params]);
+	const contextValue = useMemo(
+		() => ({ activeSession, reloadActiveSession, readActiveSession }),
+		[activeSession, reloadActiveSession, readActiveSession]
+	);
 
 	return (
 		<ActiveSessionContext.Provider value={contextValue}>

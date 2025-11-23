@@ -624,6 +624,9 @@
 			"button": {
 				"label": "Chat anlegen"
 			},
+			"consultantsSelect": {
+				"label": "Berater:innen auswählen"
+			},
 			"dateInput": {
 				"label": "Datum"
 			},

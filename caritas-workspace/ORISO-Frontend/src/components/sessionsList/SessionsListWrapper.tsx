@@ -101,31 +101,30 @@ export const SessionsListWrapper = ({
 					{type === SESSION_LIST_TYPES.ENQUIRY
 						? translate('sessionList.preview.headline')
 						: null}
-				</h2>
-				{type === SESSION_LIST_TYPES.MY_SESSION &&
-				hasUserAuthority(AUTHORITIES.CREATE_NEW_CHAT, userData) ? (
-					<Link
-						className="sessionsList__createChatLink"
-						to={{
-							pathname: `/sessions/consultant/sessionView/createGroupChat${
-								sessionListTab
-									? `?sessionListTab=${sessionListTab}`
-									: ''
-							}`
-						}}
+			</h2>
+			{type === SESSION_LIST_TYPES.MY_SESSION ? (
+				<Link
+					className="sessionsList__createChatLink"
+					to={{
+						pathname: `/sessions/consultant/sessionView/createGroupChat${
+							sessionListTab
+								? `?sessionListTab=${sessionListTab}`
+								: ''
+						}`
+					}}
+				>
+					<span
+						className="sessionsList__createChatButton"
+						title={translate(
+							'sessionList.createChat.buttonTitle'
+						)}
 					>
-						<span
-							className="sessionsList__createChatButton"
-							title={translate(
-								'sessionList.createChat.buttonTitle'
-							)}
-						>
-							<CreateGroupChatIcon />
-						</span>
-					</Link>
-				) : (
-					<div className="sessionMenuPlaceholder"></div>
-				)}
+						<CreateGroupChatIcon />
+					</span>
+				</Link>
+			) : (
+				<div className="sessionMenuPlaceholder"></div>
+			)}
 			</div>
 			<SessionsList
 				defaultLanguage={fixedLanguages[0]}

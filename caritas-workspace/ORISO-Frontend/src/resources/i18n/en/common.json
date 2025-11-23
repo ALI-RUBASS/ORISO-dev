@@ -612,6 +612,9 @@
 			"button": {
 				"label": "Create chat"
 			},
+			"consultantsSelect": {
+				"label": "Select Consultants"
+			},
 			"dateInput": {
 				"label": "Date"
 			},

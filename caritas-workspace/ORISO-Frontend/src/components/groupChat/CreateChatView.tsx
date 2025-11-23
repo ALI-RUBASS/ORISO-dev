@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { useEffect, useContext, useState, useCallback, useMemo } from 'react';
-import { useParams, useHistory } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 import {
 	desktopView,
 	mobileDetailView,
@@ -8,104 +8,44 @@ import {
 } from '../app/navigationHandler';
 import {
 	SessionsDataContext,
-	ExtendedSessionInterface,
-	getExtendedSession,
 	UPDATE_SESSIONS,
 	SessionTypeContext,
-	useTenant,
 	UserDataContext
 } from '../../globalState';
 import { InputField, InputFieldItem } from '../inputField/InputField';
-import { Checkbox } from '../checkbox/Checkbox';
 import { SelectDropdown, SelectDropdownItem } from '../select/SelectDropdown';
-import {
-	TOPIC_LENGTHS,
-	durationSelectOptionsSet,
-	getValidDateFormatForSelectedDate,
-	getValidTimeFormatForSelectedTime
-} from './createChatHelpers';
+import { TOPIC_LENGTHS } from './createChatHelpers';
 import { ReactComponent as CheckIcon } from '../../resources/img/illustrations/check.svg';
 import { ReactComponent as XIcon } from '../../resources/img/illustrations/x.svg';
 import { ButtonItem, BUTTON_TYPES, Button } from '../button/Button';
 import { OVERLAY_FUNCTIONS, Overlay, OverlayItem } from '../overlay/Overlay';
-import DatePicker, { registerLocale } from 'react-datepicker/dist/es';
-import de from 'date-fns/locale/de';
-import {
-	groupChatSettings,
-	apiCreateGroupChat,
-	chatLinkData,
-	apiUpdateGroupChat
-} from '../../api';
-import { SESSION_LIST_TAB } from '../session/sessionHelpers';
-import { getChatDate } from '../session/sessionDateHelpers';
 import { ReactComponent as BackIcon } from '../../resources/img/icons/arrow-left.svg';
-import 'react-datepicker/src/stylesheets/datepicker.scss';
-import '../datepicker/datepicker.styles';
 import './createChat.styles';
 import { useResponsive } from '../../hooks/useResponsive';
 import { apiGetSessionRoomsByGroupIds } from '../../api/apiGetSessionRooms';
-import { useSearchParam } from '../../hooks/useSearchParams';
 import { useTranslation } from 'react-i18next';
-import { Textarea } from '../form/textarea';
+import { apiGetAgencyConsultantList, Consultant } from '../../api/apiGetAgencyConsultantList';
+import { apiCreateGroupChat } from '../../api/apiGroupChatSettings';
 
-registerLocale('de', de);
-
-export const CreateGroupChatView = (props) => {
+export const CreateGroupChatView = () => {
 	const { t: translate } = useTranslation();
-	const { rcGroupId: groupIdFromParam } = useParams<{ rcGroupId: string }>();
 	const history = useHistory();
 	const {
 		userData: { agencies = [] }
 	} = useContext(UserDataContext);
 
-	const { sessions, ready, dispatch } = useContext(SessionsDataContext);
-	const { path: listPath } = useContext(SessionTypeContext);
+	const { dispatch } = useContext(SessionsDataContext);
 	const [selectedChatTopic, setSelectedChatTopic] = useState('');
-	const [selectedDate, setSelectedDate] = useState('');
-	const [selectedTime, setSelectedTime] = useState('');
-	const [selectedDuration, setSelectedDuration] = useState(null);
 	const [selectedAgency, setSelectedAgency] = useState<number | null>(null);
-	const [hintMessage, setHintMessage] = useState('');
-	const [selectedRepetitive, setSelectedRepetitive] = useState(false);
+	const [selectedConsultants, setSelectedConsultants] = useState<string[]>([]);
+	const [availableConsultants, setAvailableConsultants] = useState<Consultant[]>([]);
 	const [isCreateButtonDisabled, setIsCreateButtonDisabled] = useState(true);
-	const [isSaveButtonDisabled, setIsSaveButtonDisabled] = useState(true);
 	const [chatTopicLabel, setChatTopicLabel] = useState(
 		'groupChat.create.topicInput.label'
 	);
 	const [overlayItem, setOverlayItem] = useState<OverlayItem>(null);
 	const [overlayActive, setOverlayActive] = useState(false);
-	const [isDateInputFocused, setIsDateInputFocus] = useState(false);
-	const [isTimeInputFocused, setIsTimeInputFocus] = useState(false);
-	const [isEditGroupChatMode, setIsEditGroupChatMode] = useState(false);
-
-	const tenantData = useTenant();
-	const featureGroupChatV2Enabled =
-		tenantData?.settings?.featureGroupChatV2Enabled;
-
-	const [activeSession, setActiveSession] =
-		useState<ExtendedSessionInterface | null>(null);
-
-	const updateChatSuccessOverlayItem = useMemo<OverlayItem>(
-		() => ({
-			svg: CheckIcon,
-			headline: translate('groupChat.updateSuccess.overlay.headline'),
-			buttonSet: [
-				{
-					label: translate(
-						'groupChat.updateSuccess.overlay.button1Label'
-					),
-					function: OVERLAY_FUNCTIONS.CLOSE,
-					type: BUTTON_TYPES.SECONDARY
-				}
-			]
-		}),
-		[translate]
-	);
-
-	const prevPathIsGroupChatInfo =
-		props.location.state && props.location.state.prevIsInfoPage;
 	const [isRequestInProgress, setIsRequestInProgress] = useState(false);
-	const sessionListTab = useSearchParam<SESSION_LIST_TAB>('sessionListTab');
 
 	const createChatSuccessOverlayItem = useMemo<OverlayItem>(
 		() => ({
@@ -142,11 +82,6 @@ export const CreateGroupChatView = (props) => {
 		[translate]
 	);
 
-	const getSessionListTab = useCallback(
-		() => `${sessionListTab ? `?sessionListTab=${sessionListTab}` : ''}`,
-		[sessionListTab]
-	);
-
 	const { fromL } = useResponsive();
 	useEffect(() => {
 		if (!fromL) {
@@ -158,123 +93,47 @@ export const CreateGroupChatView = (props) => {
 		desktopView();
 	}, [fromL]);
 
-	useEffect(() => {
-		if (!ready) {
-			return;
-		}
-
-		const activeSession = getExtendedSession(groupIdFromParam, sessions);
-		if (!activeSession) {
-			return;
-		}
-
-		setActiveSession(activeSession);
-
-		if (props.location.state && props.location.state.isEditMode) {
-			const selectedTime = getChatDate(
-				activeSession.item.startDate,
-				activeSession.item.startTime
-			);
-			setIsEditGroupChatMode(true);
-			setSelectedChatTopic(activeSession.item.topic as string);
-			handleDatePicker(new Date(activeSession.item.startDate));
-			handleTimePicker(selectedTime);
-			setSelectedDuration(activeSession.item.duration);
-			setSelectedRepetitive(activeSession.item.repetitive);
-			setSelectedAgency(
-				activeSession.item.assignedAgencies?.length > 0
-					? activeSession.item.assignedAgencies[0].id
-					: null
-			);
-			setHintMessage(activeSession.item.hintMessage);
-		}
-	}, [groupIdFromParam, props.location.state, ready, sessions]);
-
-	const arePrefilledValuesChanged = useCallback(() => {
-		const prefillDate = new Date(activeSession.item.startDate);
-		const inputDate = new Date(selectedDate);
-		const prefillTime = getChatDate(
-			activeSession.item.startDate,
-			activeSession.item.startTime
-		);
-		const inputTime: Date = new Date(selectedTime);
-
-		return (
-			activeSession.item.topic !== selectedChatTopic ||
-			prefillDate.getTime() !== inputDate.getTime() ||
-			prefillTime.toLocaleTimeString() !==
-				inputTime.toLocaleTimeString() ||
-			parseInt(selectedDuration) !== activeSession.item.duration ||
-			selectedRepetitive !== activeSession.item.repetitive ||
-			selectedAgency !== activeSession.item.assignedAgencies?.[0]?.id ||
-			hintMessage !== activeSession.item.hintMessage
-		);
-	}, [
-		activeSession?.item.duration,
-		activeSession?.item.repetitive,
-		activeSession?.item.startDate,
-		activeSession?.item.startTime,
-		activeSession?.item.topic,
-		activeSession?.item.assignedAgencies,
-		activeSession?.item.hintMessage,
-		hintMessage,
-		selectedAgency,
-		selectedChatTopic,
-		selectedDate,
-		selectedDuration,
-		selectedRepetitive,
-		selectedTime
-	]);
-
+	// Auto-select agency if only one is available
 	useEffect(() => {
 		const onlyOneAgencyAvailable = agencies?.length === 1;
-
 		if (onlyOneAgencyAvailable) {
 			setSelectedAgency(agencies[0].id);
 		}
 	}, [agencies]);
 
+	// Fetch consultants when agency changes
+	useEffect(() => {
+		if (selectedAgency) {
+			apiGetAgencyConsultantList(selectedAgency.toString())
+				.then((consultants) => {
+					setAvailableConsultants(consultants);
+				})
+				.catch((error) => {
+					console.error('Failed to fetch consultants:', error);
+					setAvailableConsultants([]);
+				});
+		} else {
+			setAvailableConsultants([]);
+			setSelectedConsultants([]);
+		}
+	}, [selectedAgency]);
+
+	// Validate form
 	useEffect(() => {
 		const isChatTopicValid =
 			selectedChatTopic &&
 			selectedChatTopic.length >= TOPIC_LENGTHS.MIN &&
 			selectedChatTopic.length < TOPIC_LENGTHS.MAX;
-		if (
-			isChatTopicValid &&
-			selectedDate &&
-			selectedTime &&
-			selectedDuration &&
-			selectedAgency
-		) {
-			isEditGroupChatMode && arePrefilledValuesChanged()
-				? setIsSaveButtonDisabled(false)
-				: setIsSaveButtonDisabled(true);
+		
+		if (isChatTopicValid && selectedAgency && selectedConsultants.length > 0) {
 			setIsCreateButtonDisabled(false);
 		} else {
 			setIsCreateButtonDisabled(true);
-			setIsSaveButtonDisabled(true);
 		}
-	}, [
-		selectedChatTopic,
-		selectedDate,
-		selectedTime,
-		selectedDuration,
-		selectedAgency,
-		isEditGroupChatMode,
-		arePrefilledValuesChanged
-	]);
+	}, [selectedChatTopic, selectedAgency, selectedConsultants]);
 
 	const handleBackButton = () => {
-		if (isEditGroupChatMode) {
-			const pathInfo =
-				(prevPathIsGroupChatInfo ? '/groupChatInfo' : '') +
-				getSessionListTab();
-			history.push(
-				`${listPath}/${activeSession.item.groupId}/${activeSession.item.id}${pathInfo}`
-			);
-		} else {
-			history.push('/sessions/consultant/sessionView');
-		}
+		history.push('/sessions/consultant/sessionView');
 	};
 
 	const chatTopicInputItem: InputFieldItem = {
@@ -299,52 +158,15 @@ export const CreateGroupChatView = (props) => {
 		setSelectedChatTopic(chatTopic);
 	};
 
-	const handleDatePicker = (date) => {
-		setSelectedDate(date);
-	};
-
-	const handleTimePicker = (time) => {
-		setSelectedTime(time);
-	};
-
-	const handleDurationSelect = (selectedOption) => {
-		setSelectedDuration(selectedOption.value);
-	};
-
 	const handleAgencySelect = (selectedOption) => {
 		setSelectedAgency(parseInt(selectedOption.value));
+		setSelectedConsultants([]); // Reset consultants when agency changes
 	};
 
-	const getOptionOfSelectedDuration = useCallback(() => {
-		return durationSelectOptionsSet
-			.map((option) => ({ ...option, label: translate(option.label) }))
-			.filter(
-				(option) =>
-					option.value ===
-					(selectedDuration
-						? (selectedDuration.toString() as string)
-						: '')
-			)[0];
-	}, [selectedDuration, translate]);
-
-	const durationSelectDropdown = useMemo<SelectDropdownItem>(
-		() => ({
-			id: 'chatDuration',
-			selectedOptions: durationSelectOptionsSet.map((option) => ({
-				...option,
-				label: translate(option.label)
-			})),
-			handleDropdownSelect: handleDurationSelect,
-			selectInputLabel: translate(
-				'groupChat.create.durationSelect.label'
-			),
-			useIconOption: false,
-			isSearchable: false,
-			menuPlacement: 'bottom',
-			defaultValue: getOptionOfSelectedDuration()
-		}),
-		[getOptionOfSelectedDuration, translate]
-	);
+	const handleConsultantsSelect = (selectedOptions) => {
+		const consultantIds = selectedOptions ? selectedOptions.map(opt => opt.value) : [];
+		setSelectedConsultants(consultantIds);
+	};
 
 	const getOptionOfSelectedAgency = useCallback(() => {
 		const agency = agencies.find((agency) => agency.id === selectedAgency);
@@ -372,9 +194,35 @@ export const CreateGroupChatView = (props) => {
 		[agencies, getOptionOfSelectedAgency, translate]
 	);
 
+	const getSelectedConsultantOptions = useCallback(() => {
+		return availableConsultants
+			.filter((consultant) => selectedConsultants.includes(consultant.consultantId))
+			.map((consultant) => ({
+				value: consultant.consultantId,
+				label: `${consultant.firstName} ${consultant.lastName} (${consultant.username})`
+			}));
+	}, [availableConsultants, selectedConsultants]);
+
+	const consultantsSelectDropdown = useMemo<SelectDropdownItem>(
+		() => ({
+			id: 'consultants',
+			selectedOptions: availableConsultants.map((consultant) => ({
+				value: consultant.consultantId,
+				label: `${consultant.firstName} ${consultant.lastName} (${consultant.username})`
+			})),
+			defaultValue: getSelectedConsultantOptions(),
+			handleDropdownSelect: handleConsultantsSelect,
+			selectInputLabel: translate('groupChat.create.consultantsSelect.label') || 'Select Consultants',
+			isSearchable: true,
+			menuPlacement: 'bottom',
+			isMulti: true
+		}),
+		[availableConsultants, getSelectedConsultantOptions, translate]
+	);
+
 	const buttonSetCreate = useMemo<ButtonItem>(
 		() => ({
-			label: translate('groupChat.create.button.label'),
+			label: translate('groupChat.create.button.label') || 'Create',
 			function: OVERLAY_FUNCTIONS.CLOSE,
 			type: BUTTON_TYPES.PRIMARY
 		}),
@@ -383,12 +231,133 @@ export const CreateGroupChatView = (props) => {
 
 	const buttonSetCancel = useMemo<ButtonItem>(
 		() => ({
-			label: translate('groupChat.cancel.button.label'),
+			label: translate('groupChat.cancel.button.label') || 'Cancel',
 			function: OVERLAY_FUNCTIONS.CLOSE,
 			type: BUTTON_TYPES.SECONDARY
 		}),
 		[translate]
 	);
+
+	const handleCreateButton = useCallback(() => {
+		if (isRequestInProgress) {
+			return;
+		}
+		setIsRequestInProgress(true);
+
+		// Use the proper API function
+		apiCreateGroupChat({
+			topic: selectedChatTopic,
+			startDate: new Date().toISOString().split('T')[0],
+			startTime: '00:00',
+			duration: 60,
+			agencyId: selectedAgency,
+			hintMessage: '',
+			repetitive: false,
+			featureGroupChatV2Enabled: true,
+			consultantIds: selectedConsultants
+		} as any)
+			.then((response) => {
+				// Refresh session list
+				apiGetSessionRoomsByGroupIds([response.groupId]).then(
+					({ sessions }) => {
+						dispatch({
+							type: UPDATE_SESSIONS,
+							sessions: sessions
+						});
+						setOverlayItem(createChatSuccessOverlayItem);
+						setOverlayActive(true);
+					}
+				);
+			})
+			.catch(() => {
+				setOverlayItem(createChatErrorOverlayItem);
+				setOverlayActive(true);
+			})
+			.finally(() => {
+				setIsRequestInProgress(false);
+			});
+	}, [
+		isRequestInProgress,
+		selectedChatTopic,
+		selectedAgency,
+		selectedConsultants,
+		dispatch,
+		createChatSuccessOverlayItem,
+		createChatErrorOverlayItem
+	]);
+
+	const handleOverlayAction = useCallback(
+		(buttonFunction: string) => {
+			if (buttonFunction === OVERLAY_FUNCTIONS.CLOSE) {
+				if (
+					JSON.stringify(overlayItem) ===
+						JSON.stringify(createChatSuccessOverlayItem)
+				) {
+					history.push('/sessions/consultant/sessionView');
+				} else {
+					setOverlayActive(false);
+					setOverlayItem({});
+				}
+			}
+		},
+		[
+			createChatSuccessOverlayItem,
+			history,
+			overlayItem
+		]
+	);
+
+	return (
+		<div className="createChat__wrapper">
+			<div className="createChat__header">
+				<div className="createChat__header__inner">
+					<span
+						onClick={handleBackButton}
+						className="createChat__header__backButton"
+					>
+						<BackIcon />
+					</span>
+					<h3 className="createChat__header__title">
+						{translate('groupChat.create.title') || 'Create Group Chat'}
+					</h3>
+				</div>
+				<p className="createChat__header__subtitle">
+					{translate('groupChat.create.subtitle') || 'Create a new group chat with selected consultants'}
+				</p>
+			</div>
+
+			<form id="createChatForm" className="createChat__content">
+				<InputField
+					item={chatTopicInputItem}
+					inputHandle={handleChatTopicInput}
+				/>
+
+				<SelectDropdown {...agencySelectDropdown} />
+
+				<SelectDropdown {...consultantsSelectDropdown} />
+
+				<div className="createChat__buttonsWrapper">
+					<Button
+						item={buttonSetCancel}
+						buttonHandle={handleBackButton}
+					/>
+					<Button
+						item={buttonSetCreate}
+						buttonHandle={handleCreateButton}
+						disabled={isCreateButtonDisabled}
+					/>
+				</div>
+			</form>
+
+			{overlayActive && (
+				<Overlay
+					item={overlayItem}
+					handleOverlay={handleOverlayAction}
+				/>
+			)}
+		</div>
+	);
+};
 
 	const buttonSetSave = useMemo<ButtonItem>(
 		() => ({

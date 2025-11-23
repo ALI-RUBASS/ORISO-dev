@@ -745,13 +745,9 @@ export const SessionsList = ({
 				ref={listRef}
 				onScroll={handleListScroll}
 			>
-				{!isLoading &&
-					isCreateChatActive &&
-					type === SESSION_LIST_TYPES.MY_SESSION &&
-					hasUserAuthority(
-						AUTHORITIES.CREATE_NEW_CHAT,
-						userData
-					) && <SessionListCreateChat />}
+			{!isLoading &&
+				isCreateChatActive &&
+				type === SESSION_LIST_TYPES.MY_SESSION && <SessionListCreateChat />}
 
 				{(!isLoading || finalSessionsList.length > 0) &&
 					finalSessionsList
