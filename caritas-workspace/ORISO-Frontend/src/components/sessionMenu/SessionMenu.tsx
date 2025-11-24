@@ -331,17 +331,24 @@ export const SessionMenu = (props: SessionMenuProps) => {
 		type !== SESSION_LIST_TYPES.ENQUIRY &&
 		consultingType.isVideoCallAllowed;
 
-	const handleStartVideoCall = (isVideoActivated: boolean = false) => {
+	const handleStartVideoCall = async (isVideoActivated: boolean = false) => {
 		console.log("═══════════════════════════════════════════════");
 		console.log("🎬 CALL BUTTON CLICKED!");
 		console.log("═══════════════════════════════════════════════");
 		console.log("Video activated?", isVideoActivated);
+		console.log("User Agent:", navigator.userAgent);
+		console.log("Is Safari?", /^((?!chrome|android).)*safari/i.test(navigator.userAgent));
 		
 		try {
 			// Get Matrix room ID from active session
-			const roomId = activeSession.item.matrixRoomId || activeSession.item.groupId;
+			// For 1-on-1 sessions: use activeSession.rid (the actual Matrix room ID)
+			// For group chats: use activeSession.item.matrixRoomId or groupId
+			const roomId = activeSession.rid || activeSession.item.matrixRoomId || activeSession.item.groupId;
 			
 			console.log("Room ID:", roomId);
+			console.log("activeSession.rid:", activeSession.rid);
+			console.log("activeSession.item.matrixRoomId:", activeSession.item.matrixRoomId);
+			console.log("activeSession.item.groupId:", activeSession.item.groupId);
 			
 			if (!roomId) {
 				console.error('❌ No Matrix room ID found for session');
@@ -349,7 +356,53 @@ export const SessionMenu = (props: SessionMenuProps) => {
 				return;
 			}
 
-			console.log('📞 Starting call via CallManager');
+			// 🍎 SAFARI iOS FIX: Check if we're on HTTPS (required for getUserMedia on Safari)
+			if (window.location.protocol !== 'https:') {
+				console.error('❌ Not on HTTPS! Safari requires HTTPS for camera/microphone access');
+				const httpsUrl = window.location.href.replace('http://', 'https://');
+				if (window.confirm('Camera/microphone access requires HTTPS. Redirect to secure connection?')) {
+					window.location.href = httpsUrl;
+				}
+				return;
+			}
+
+			// 🔥 CRITICAL FOR MOBILE: Request media permissions IMMEDIATELY in click handler
+			// This keeps the "user gesture" alive for mobile browsers (prevents popup blocking)
+			console.log('🎤 Requesting media permissions (SYNC with user click)...');
+			console.log('Requesting:', { video: isVideoActivated, audio: true });
+			
+			try {
+				const stream = await navigator.mediaDevices.getUserMedia({ 
+					video: isVideoActivated, 
+					audio: true 
+				});
+				console.log('✅ Media permissions granted!', stream);
+				console.log('Stream tracks:', stream.getTracks().map(t => ({ kind: t.kind, enabled: t.enabled })));
+				
+				// Store stream globally so FloatingCallWidget can use it
+				(window as any).__preRequestedMediaStream = stream;
+				(window as any).__preRequestedMediaStreamTime = Date.now();
+			} catch (mediaError: any) {
+				console.error('❌ Media permission denied:', mediaError);
+				console.error('Error name:', mediaError.name);
+				console.error('Error message:', mediaError.message);
+				
+				let errorMsg = 'Cannot access camera/microphone. ';
+				if (mediaError.name === 'NotAllowedError') {
+					errorMsg += 'Please grant permissions in your browser settings.';
+				} else if (mediaError.name === 'NotFoundError') {
+					errorMsg += 'No camera/microphone found on this device.';
+				} else if (mediaError.name === 'NotSupportedError') {
+					errorMsg += 'Your browser does not support this feature. Please use HTTPS.';
+				} else {
+					errorMsg += mediaError.message || 'Unknown error.';
+				}
+				
+				alert(errorMsg);
+				return;
+			}
+
+			console.log('📞 Starting call via CallManager with roomId:', roomId);
 			
 			// Use CallManager directly (clean architecture!)
 			const { callManager } = require('../../services/CallManager');
@@ -358,6 +411,7 @@ export const SessionMenu = (props: SessionMenuProps) => {
 			console.log('✅ Call initiated!');
 		} catch (error) {
 			console.error('💥 ERROR in handleStartVideoCall:', error);
+			alert(`Call failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
 		}
 		console.log("═══════════════════════════════════════════════");
 	};
@@ -422,7 +476,8 @@ export const SessionMenu = (props: SessionMenuProps) => {
 					flyoutOpen && 'sessionMenu__content--open'
 				}`}
 			>
-				{hasVideoCallFeatures() && (
+				{/* REMOVED: Mobile dropdown video call items - now using desktop buttons on mobile too */}
+				{false && hasVideoCallFeatures() && (
 					<>
 						<div
 							className="sessionMenu__item sessionMenu__item--mobile"

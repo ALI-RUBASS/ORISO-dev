@@ -16,6 +16,7 @@ export const FloatingCallWidget: React.FC = () => {
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [isMinimized, setIsMinimized] = useState(false);
     const [otherUserInitial, setOtherUserInitial] = useState<string>('U');
+    const [, forceUpdate] = useState(0); // 🔥 Force re-render trigger
     
     const [isDragging, setIsDragging] = useState(false);
     const [position, setPosition] = useState(() => {
@@ -86,15 +87,26 @@ export const FloatingCallWidget: React.FC = () => {
         if (!callData || callData.isIncoming || callInitiatedRef.current || callData.matrixCall) return;
         
         callInitiatedRef.current = true;
-        navigator.mediaDevices.getUserMedia({ video: callData.isVideo, audio: true })
-            .then((stream) => {
-                (window as any).__activeMediaStream = stream;
-                return matrixCallService.startCall({
-                    roomId: callData.roomId,
-                    isVideoCall: callData.isVideo,
-                    localVideoElement: localVideoRef.current || undefined,
-                    remoteVideoElement: remoteVideoRef.current || undefined
-                });
+        
+        // 🔥 MOBILE FIX: Check if media stream was pre-requested in button click handler
+        const preRequestedStream = (window as any).__preRequestedMediaStream;
+        const preRequestedTime = (window as any).__preRequestedMediaStreamTime;
+        const isStreamFresh = preRequestedTime && (Date.now() - preRequestedTime < 5000); // Within 5 seconds
+        
+        if (preRequestedStream && isStreamFresh) {
+            console.log('✅ Using pre-requested media stream (mobile-friendly!)');
+            (window as any).__activeMediaStream = preRequestedStream;
+            
+            // Clear the pre-requested stream
+            delete (window as any).__preRequestedMediaStream;
+            delete (window as any).__preRequestedMediaStreamTime;
+            
+            // Start the call immediately
+            matrixCallService.startCall({
+                roomId: callData.roomId,
+                isVideoCall: callData.isVideo,
+                localVideoElement: localVideoRef.current || undefined,
+                remoteVideoElement: remoteVideoRef.current || undefined
             })
             .then((matrixCall) => {
                 callManager.setMatrixCall(matrixCall);
@@ -104,6 +116,27 @@ export const FloatingCallWidget: React.FC = () => {
                 alert(`Failed to start call: ${(err as Error).message}`);
                 callManager.endCall();
             });
+        } else {
+            console.log('⚠️ No pre-requested stream, requesting now (may fail on mobile)');
+            navigator.mediaDevices.getUserMedia({ video: callData.isVideo, audio: true })
+                .then((stream) => {
+                    (window as any).__activeMediaStream = stream;
+                    return matrixCallService.startCall({
+                        roomId: callData.roomId,
+                        isVideoCall: callData.isVideo,
+                        localVideoElement: localVideoRef.current || undefined,
+                        remoteVideoElement: remoteVideoRef.current || undefined
+                    });
+                })
+                .then((matrixCall) => {
+                    callManager.setMatrixCall(matrixCall);
+                })
+                .catch((err) => {
+                    console.error("Failed to start call:", err);
+                    alert(`Failed to start call: ${(err as Error).message}`);
+                    callManager.endCall();
+                });
+        }
     }, [callData]);
 
     // Call duration timer
@@ -176,6 +209,9 @@ export const FloatingCallWidget: React.FC = () => {
                 localVideoRef.current || undefined, remoteVideoRef.current || undefined
             );
             callManager.setMatrixCall(incomingCall as any);
+            
+            // 🔥 Force UI re-render to hide Answer/Decline buttons and show call controls
+            setTimeout(() => forceUpdate(prev => prev + 1), 100);
         } catch (err) {
             console.error("Failed to answer:", err);
             alert(`Failed to answer: ${(err as Error).message}`);

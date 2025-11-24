@@ -216,10 +216,6 @@ $iconSize: 20px;
 	}
 
 	&__videoCallButtons {
-		display: none;
-
-		@include breakpoint($fromLarge) {
-			display: flex;
-		}
+		display: flex; // Show on all screen sizes (mobile + desktop)
 	}
 }
