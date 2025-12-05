@@ -16,9 +16,11 @@ import de.caritas.cob.userservice.api.model.Session;
 import de.caritas.cob.userservice.api.port.out.ConsultantRepository;
 import de.caritas.cob.userservice.api.port.out.IdentityClient;
 import de.caritas.cob.userservice.api.service.LogService;
+import de.caritas.cob.userservice.api.service.agency.AgencyMatrixCredentialClient;
 import de.caritas.cob.userservice.api.service.session.SessionService;
 import de.caritas.cob.userservice.api.service.statistics.StatisticsService;
 import de.caritas.cob.userservice.api.service.statistics.event.AssignSessionStatisticsEvent;
+import static org.apache.commons.lang3.StringUtils.isBlank;
 import de.caritas.cob.userservice.api.tenant.TenantContext;
 import de.caritas.cob.userservice.api.tenant.TenantContextProvider;
 import de.caritas.cob.userservice.statisticsservice.generated.web.model.UserRole;
@@ -52,6 +54,7 @@ public class AssignEnquiryFacade {
   private final @NonNull HttpServletRequest httpServletRequest;
   private final @NonNull MatrixSynapseService matrixSynapseService;
   private final @NonNull ConsultantRepository consultantRepository;
+  private final @NonNull AgencyMatrixCredentialClient agencyMatrixCredentialClient;
 
   /**
    * Assigns the given {@link Session} session to the given {@link Consultant}. Remove all other
@@ -162,9 +165,6 @@ public class AssignEnquiryFacade {
           consultant.getMatrixUserId());
 
       if (session.getUser().getMatrixUserId() != null && consultant.getMatrixUserId() != null) {
-        var roomName = "Session " + session.getId() + " - " + consultant.getUsername();
-        var roomAlias = "session_" + session.getId();
-
         // MATRIX MIGRATION: Extract plain username from Matrix ID (consultant.getUsername() is
         // encrypted in DB)
         String consultantMatrixUsername = null;
@@ -172,88 +172,139 @@ public class AssignEnquiryFacade {
           consultantMatrixUsername = consultant.getMatrixUserId().substring(1).split(":")[0];
         }
 
-        // Use consultant credentials to create room (consultant will be room admin)
+        // Use consultant credentials
         var consultantPassword = consultant.getMatrixPassword();
         if (consultantPassword == null) {
           log.warn(
-              "Consultant {} has no Matrix password - cannot create Matrix room",
+              "Consultant {} has no Matrix password - cannot assign to Matrix room",
               consultant.getUsername());
           // Continue without Matrix room - fallback to RocketChat or no messaging
         }
 
-        var matrixResponse =
-            consultantPassword != null
-                ? matrixSynapseService.createRoomAsConsultant(
-                    roomName, roomAlias, consultantMatrixUsername, consultantPassword)
-                : null;
+        if (consultantPassword != null && consultantMatrixUsername != null) {
+          String existingRoomId = session.getMatrixRoomId();
 
-        if (matrixResponse != null
-            && matrixResponse.getBody() != null
-            && matrixResponse.getBody().getRoomId() != null) {
-          session.setMatrixRoomId(matrixResponse.getBody().getRoomId());
-          sessionService.saveSession(session);
+          if (existingRoomId != null && !existingRoomId.isBlank()) {
+            // REUSE EXISTING ROOM (agency-user room)
+            log.info(
+                "Reusing existing Matrix room {} for session {} (agency-user room)",
+                existingRoomId,
+                session.getId());
 
-          // Invite user to room - reuse consultantMatrixUsername from above
-          String consultantToken = null;
-          if (consultantMatrixUsername != null) {
-            consultantToken =
-                matrixSynapseService.loginUser(consultantMatrixUsername, consultantPassword);
-          }
+            try {
+              // Get agency service account credentials (agency created the room, so we need their token)
+              var agencyCredentialsOpt = agencyMatrixCredentialClient.fetchMatrixCredentials(session.getAgencyId());
+              
+              if (agencyCredentialsOpt.isEmpty()) {
+                log.warn(
+                    "No agency Matrix credentials found for agency {}, falling back to create new room",
+                    session.getAgencyId());
+                createNewMatrixRoom(session, consultant, consultantMatrixUsername, consultantPassword);
+                return;
+              }
 
-          if (consultantToken != null) {
-            String roomId = matrixResponse.getBody().getRoomId();
+              var agencyCredentials = agencyCredentialsOpt.get();
+              if (isBlank(agencyCredentials.getMatrixUserId()) || isBlank(agencyCredentials.getMatrixPassword())) {
+                log.warn(
+                    "Agency Matrix credentials incomplete for agency {}, falling back to create new room",
+                    session.getAgencyId());
+                createNewMatrixRoom(session, consultant, consultantMatrixUsername, consultantPassword);
+                return;
+              }
 
-            // Invite the user to the room
-            matrixSynapseService.inviteUserToRoom(
-                roomId, session.getUser().getMatrixUserId(), consultantToken);
+              // Extract agency Matrix username
+              String agencyMatrixUsername = null;
+              if (agencyCredentials.getMatrixUserId().startsWith("@")) {
+                agencyMatrixUsername = agencyCredentials.getMatrixUserId().substring(1).split(":")[0];
+              }
 
-            // Auto-accept invitation: Login as user and join the room
-            String userPassword = session.getUser().getMatrixPassword();
+              if (isBlank(agencyMatrixUsername)) {
+                log.warn("Invalid agency Matrix user ID, falling back to create new room");
+                createNewMatrixRoom(session, consultant, consultantMatrixUsername, consultantPassword);
+                return;
+              }
 
-            // Extract Matrix username from matrix_user_id (handles encrypted DB usernames)
-            String userMatrixUsername = null;
-            if (session.getUser().getMatrixUserId() != null
-                && session.getUser().getMatrixUserId().startsWith("@")) {
-              userMatrixUsername = session.getUser().getMatrixUserId().substring(1).split(":")[0];
-            }
+              // Login as agency service account (room creator)
+              String agencyToken = matrixSynapseService.loginUser(
+                  agencyMatrixUsername, agencyCredentials.getMatrixPassword());
 
-            if (userMatrixUsername != null) {
-              String userToken = matrixSynapseService.loginUser(userMatrixUsername, userPassword);
-              if (userToken != null) {
-                boolean userJoined = matrixSynapseService.joinRoom(roomId, userToken);
-                if (userJoined) {
+              if (isBlank(agencyToken)) {
+                log.error(
+                    "Failed to login agency service account for room reuse, falling back to create new room");
+                createNewMatrixRoom(session, consultant, consultantMatrixUsername, consultantPassword);
+                return;
+              }
+
+              // Use agency token to invite consultant to existing room
+              try {
+                matrixSynapseService.inviteUserToRoom(
+                    existingRoomId, consultant.getMatrixUserId(), agencyToken);
+                log.info(
+                    "Agency invited consultant {} to existing room {}",
+                    consultant.getUsername(),
+                    existingRoomId);
+              } catch (Exception e) {
+                log.warn(
+                    "Failed to invite consultant to room using agency token: {}", e.getMessage());
+                // Continue anyway - might already be invited
+              }
+
+              // Use agency token to set consultant as admin (power level 100)
+              boolean powerLevelSet =
+                  matrixSynapseService.setUserPowerLevel(
+                      existingRoomId, consultant.getMatrixUserId(), 100, agencyToken);
+              if (powerLevelSet) {
+                log.info(
+                    "Set consultant {} as admin (power level 100) in room {} using agency token",
+                    consultant.getUsername(),
+                    existingRoomId);
+              } else {
+                log.warn(
+                    "Failed to set power level for consultant {} in room {}",
+                    consultant.getUsername(),
+                    existingRoomId);
+              }
+
+              // Login consultant and join room
+              String consultantToken =
+                  matrixSynapseService.loginUser(consultantMatrixUsername, consultantPassword);
+
+              if (consultantToken != null) {
+                // Auto-join consultant to room
+                boolean consultantJoined = matrixSynapseService.joinRoom(existingRoomId, consultantToken);
+                if (consultantJoined) {
                   log.info(
-                      "User {} (Matrix: {}) auto-accepted room invitation for room: {}",
-                      session.getUser().getUsername(),
-                      userMatrixUsername,
-                      roomId);
+                      "Consultant {} successfully joined existing room {} (all messages preserved)",
+                      consultant.getUsername(),
+                      existingRoomId);
                 } else {
                   log.warn(
-                      "User {} (Matrix: {}) failed to auto-accept room invitation for room: {}",
-                      session.getUser().getUsername(),
-                      userMatrixUsername,
-                      roomId);
+                      "Consultant {} failed to join existing room {}",
+                      consultant.getUsername(),
+                      existingRoomId);
                 }
+              } else {
+                log.error("Failed to login consultant for room join");
               }
-            } else {
-              log.warn(
-                  "User {} has invalid matrix_user_id, skipping auto-join",
-                  session.getUser().getUsername());
-            }
 
-            // Consultant auto-joins (as room creator, consultant is already in room, but let's
-            // ensure)
-            boolean consultantJoined = matrixSynapseService.joinRoom(roomId, consultantToken);
-            if (consultantJoined) {
-              log.info("Consultant {} confirmed in room: {}", consultant.getUsername(), roomId);
+              // DON'T overwrite session.matrixRoomId - keep existing room ID
+              // No need to save session since matrixRoomId hasn't changed
+            } catch (Exception e) {
+              log.error(
+                  "Failed to reuse existing room {} for session {}, falling back to create new room: {}",
+                  existingRoomId,
+                  session.getId(),
+                  e.getMessage(),
+                  e);
+              // Fall back to creating new room
+              createNewMatrixRoom(session, consultant, consultantMatrixUsername, consultantPassword);
             }
+          } else {
+            // NO EXISTING ROOM - Create new room (backward compatibility)
+            log.info(
+                "No existing room found for session {}, creating new Matrix room", session.getId());
+            createNewMatrixRoom(session, consultant, consultantMatrixUsername, consultantPassword);
           }
-
-          log.info(
-              "Successfully created Matrix room: {} with ID: {} for session: {}",
-              roomName,
-              matrixResponse.getBody().getRoomId(),
-              session.getId());
         }
       } else {
         log.warn(
@@ -308,6 +359,98 @@ public class AssignEnquiryFacade {
   private void rollbackSessionUpdate(Session session) {
     if (nonNull(session)) {
       sessionService.updateConsultantAndStatusForSession(session, null, NEW);
+    }
+  }
+
+  /**
+   * Creates a new Matrix room for consultant and user (fallback when no existing room).
+   *
+   * @param session the session
+   * @param consultant the consultant
+   * @param consultantMatrixUsername the consultant's Matrix username
+   * @param consultantPassword the consultant's Matrix password
+   */
+  private void createNewMatrixRoom(
+      Session session,
+      Consultant consultant,
+      String consultantMatrixUsername,
+      String consultantPassword) {
+    try {
+      var roomName = "Session " + session.getId() + " - " + consultant.getUsername();
+      var roomAlias = "session_" + session.getId();
+
+      var matrixResponse =
+          matrixSynapseService.createRoomAsConsultant(
+              roomName, roomAlias, consultantMatrixUsername, consultantPassword);
+
+      if (matrixResponse != null
+          && matrixResponse.getBody() != null
+          && matrixResponse.getBody().getRoomId() != null) {
+        session.setMatrixRoomId(matrixResponse.getBody().getRoomId());
+        sessionService.saveSession(session);
+
+        // Invite user to room
+        String consultantToken =
+            matrixSynapseService.loginUser(consultantMatrixUsername, consultantPassword);
+
+        if (consultantToken != null) {
+          String roomId = matrixResponse.getBody().getRoomId();
+
+          // Invite the user to the room
+          matrixSynapseService.inviteUserToRoom(
+              roomId, session.getUser().getMatrixUserId(), consultantToken);
+
+          // Auto-accept invitation: Login as user and join the room
+          String userPassword = session.getUser().getMatrixPassword();
+
+          // Extract Matrix username from matrix_user_id (handles encrypted DB usernames)
+          String userMatrixUsername = null;
+          if (session.getUser().getMatrixUserId() != null
+              && session.getUser().getMatrixUserId().startsWith("@")) {
+            userMatrixUsername = session.getUser().getMatrixUserId().substring(1).split(":")[0];
+          }
+
+          if (userMatrixUsername != null) {
+            String userToken = matrixSynapseService.loginUser(userMatrixUsername, userPassword);
+            if (userToken != null) {
+              boolean userJoined = matrixSynapseService.joinRoom(roomId, userToken);
+              if (userJoined) {
+                log.info(
+                    "User {} (Matrix: {}) auto-accepted room invitation for room: {}",
+                    session.getUser().getUsername(),
+                    userMatrixUsername,
+                    roomId);
+              } else {
+                log.warn(
+                    "User {} (Matrix: {}) failed to auto-accept room invitation for room: {}",
+                    session.getUser().getUsername(),
+                    userMatrixUsername,
+                    roomId);
+              }
+            }
+          } else {
+            log.warn(
+                "User {} has invalid matrix_user_id, skipping auto-join",
+                session.getUser().getUsername());
+          }
+
+          // Consultant auto-joins (as room creator, consultant is already in room, but let's
+          // ensure)
+          boolean consultantJoined = matrixSynapseService.joinRoom(roomId, consultantToken);
+          if (consultantJoined) {
+            log.info("Consultant {} confirmed in room: {}", consultant.getUsername(), roomId);
+          }
+        }
+
+        log.info(
+            "Successfully created new Matrix room: {} with ID: {} for session: {}",
+            roomName,
+            matrixResponse.getBody().getRoomId(),
+            session.getId());
+      }
+    } catch (Exception e) {
+      log.error(
+          "Failed to create new Matrix room for session {}: {}", session.getId(), e.getMessage());
     }
   }
 }
