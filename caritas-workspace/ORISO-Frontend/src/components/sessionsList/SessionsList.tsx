@@ -7,7 +7,7 @@ import {
 	useRef,
 	useState
 } from 'react';
-import { Link, useHistory, useParams } from 'react-router-dom';
+import { Link, useHistory, useLocation, useParams } from 'react-router-dom';
 import {
 	getSessionType,
 	SESSION_LIST_TAB,
@@ -78,14 +78,16 @@ export const SessionsList = ({
 	const { rcGroupId: groupIdFromParam, sessionId: sessionIdFromParam } =
 		useParams<{ rcGroupId: string; sessionId: string }>();
 	const history = useHistory();
+	const location = useLocation();
 
 	const initialId = useUpdatingRef(groupIdFromParam || sessionIdFromParam);
+	const hasAutoOpenedRef = useRef(false);
 
 	const rcUid = useRef(getValueFromCookie('rc_uid'));
 	const listRef = createRef<HTMLDivElement>();
 
 	const { sessions, dispatch } = useContext(SessionsDataContext);
-	const { type } = useContext(SessionTypeContext);
+	const { type, path: listPath } = useContext(SessionTypeContext);
 
 	const {
 		subscribe,
@@ -211,11 +213,83 @@ export const SessionsList = ({
 						ready: true,
 						sessions
 					});
-					if (
-						sessions?.length === 1 &&
-						sessions[0]?.session?.status === STATUS_EMPTY
-					) {
-						history.push(`/sessions/user/view/write/`);
+					// Auto-open session if there's only one session AND we haven't already auto-opened
+					// Only auto-open if we're on the base list page (not already viewing a session)
+					const currentPath = location.pathname;
+					// Use listPath from context, fallback to hardcoded path for askers
+					const baseListPath = listPath || '/sessions/user/view';
+					// Check if we're on the base list page (exact match or with trailing slash)
+					const isOnBaseListPage = currentPath === baseListPath || 
+						currentPath === `${baseListPath}/` ||
+						currentPath === '/sessions/user/view' ||
+						currentPath === '/sessions/user/view/';
+					
+					// Use sessionStorage to persist across remounts - but clear it if we're on the base page
+					// This allows re-triggering if user navigates back to list
+					const firstSession = sessions?.[0];
+					const sessionId = firstSession?.session?.id;
+					const autoOpenKey = `autoOpenedSession_${sessionId || ''}`;
+					
+					// Clear sessionStorage flag if we're back on the base list page (user navigated back)
+					if (isOnBaseListPage) {
+						sessionStorage.removeItem(autoOpenKey);
+					}
+					
+					const hasAutoOpened = sessionStorage.getItem(autoOpenKey) === 'true';
+					
+					console.log('🔍 Auto-open check:', {
+						sessionsCount: sessions?.length,
+						currentPath,
+						listPath,
+						baseListPath,
+						isOnBaseListPage,
+						hasAutoOpened,
+						hasAutoOpenedRef: hasAutoOpenedRef.current,
+						firstSession,
+						sessionId,
+						sessionStructure: firstSession ? Object.keys(firstSession) : null
+					});
+					
+					if (sessions?.length === 1 && !hasAutoOpened && !hasAutoOpenedRef.current && isOnBaseListPage) {
+						const session = sessions[0];
+						const sessionId = session?.session?.id;
+						const groupId = session?.session?.groupId;
+						const isEmptyEnquiry = session?.session?.status === STATUS_EMPTY;
+						
+						console.log('✅ Auto-opening session:', { 
+							sessionId, 
+							groupId, 
+							isEmptyEnquiry,
+							sessionStatus: session?.session?.status,
+							fullSession: session
+						});
+						
+						if (sessionId !== undefined) {
+							// Mark as auto-opened IMMEDIATELY in both ref and sessionStorage
+							hasAutoOpenedRef.current = true;
+							sessionStorage.setItem(autoOpenKey, 'true');
+							
+							// Check if groupId looks like a Matrix room ID (starts with ! or contains :)
+							const isMatrixRoomId = groupId && 
+								(groupId.startsWith('!') || groupId.includes(':'));
+							
+							if (isEmptyEnquiry) {
+								// Empty enquiry: go to write view
+								const targetPath = `${baseListPath}/write/${sessionId}`;
+								console.log('🚀 Navigating to write view:', targetPath);
+								history.push(targetPath);
+							} else if (groupId && !isMatrixRoomId) {
+								// Original RocketChat behavior: navigate with groupId
+								const targetPath = `${baseListPath}/${groupId}/${sessionId}`;
+								console.log('🚀 Navigating with groupId:', targetPath);
+								history.push(targetPath);
+							} else {
+								// MATRIX MIGRATION FIX: Navigate by session ID for Matrix rooms or sessions without groupId
+								const targetPath = `${baseListPath}/session/${sessionId}`;
+								console.log('🚀 Navigating by session ID:', targetPath);
+								history.push(targetPath);
+							}
+						}
 					}
 				})
 				.then(() => {
