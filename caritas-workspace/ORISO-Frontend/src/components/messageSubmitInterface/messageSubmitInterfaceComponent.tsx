@@ -352,6 +352,118 @@ export const MessageSubmitInterfaceComponent = ({
 		[cleanupAttachment]
 	);
 
+	const scrollEditorToBottom = useCallback(() => {
+		const textInput: any = textareaInputRef.current;
+		if (!textInput) return;
+		
+		// Find all possible scrollable elements
+		const editorContent = textInput.querySelector('.public-DraftEditor-content');
+		const editorRoot = textInput.querySelector('.DraftEditor-root');
+		const editorContentDiv = textInput.querySelector('.public-DraftEditor-content > div');
+		
+		// Function to perform the scroll on all possible elements
+		const doScroll = () => {
+			// Scroll the main editor content
+			if (editorContent) {
+				const scrollHeight = editorContent.scrollHeight;
+				const clientHeight = editorContent.clientHeight;
+				if (scrollHeight > clientHeight) {
+					editorContent.scrollTop = scrollHeight + 1000;
+				}
+			}
+			
+			// Scroll the editor root container
+			if (editorRoot) {
+				const scrollHeight = editorRoot.scrollHeight;
+				const clientHeight = editorRoot.clientHeight;
+				if (scrollHeight > clientHeight) {
+					editorRoot.scrollTop = scrollHeight + 1000;
+				}
+			}
+			
+			// Scroll the textInput container itself
+			if (textInput.scrollHeight > textInput.clientHeight) {
+				textInput.scrollTop = textInput.scrollHeight + 1000;
+			}
+			
+			// Try scrollIntoView on the last element as fallback
+			if (editorContentDiv) {
+				const lastChild = editorContentDiv.lastElementChild;
+				if (lastChild) {
+					lastChild.scrollIntoView({ behavior: 'auto', block: 'end', inline: 'nearest' });
+				}
+			}
+		};
+		
+		// Scroll immediately
+		doScroll();
+		
+		// Scroll after DOM update (requestAnimationFrame) - multiple frames for rich text
+		requestAnimationFrame(() => {
+			doScroll();
+			requestAnimationFrame(() => {
+				doScroll();
+				// Extra frames for rich text mode (Draft.js + toolbar needs more time)
+				if (isRichtextActive) {
+					requestAnimationFrame(() => {
+						doScroll();
+						requestAnimationFrame(() => {
+							doScroll();
+							requestAnimationFrame(() => {
+								doScroll();
+							});
+						});
+					});
+				}
+			});
+		});
+		
+		// Multiple delayed scrolls to catch late DOM updates
+		// When rich text is active with toolbar, we need even more aggressive scrolling
+		if (isRichtextActive) {
+			setTimeout(() => doScroll(), 0);
+			setTimeout(() => doScroll(), 10);
+			setTimeout(() => doScroll(), 30);
+			setTimeout(() => doScroll(), 50);
+			setTimeout(() => doScroll(), 100);
+			setTimeout(() => doScroll(), 200);
+			setTimeout(() => doScroll(), 400);
+			setTimeout(() => doScroll(), 600);
+			setTimeout(() => doScroll(), 800);
+			setTimeout(() => doScroll(), 1000);
+		} else {
+			setTimeout(() => doScroll(), 10);
+			setTimeout(() => doScroll(), 50);
+			setTimeout(() => doScroll(), 100);
+		}
+	}, [isRichtextActive]);
+
+	// Auto-scroll when editorState changes (especially for Enter key creating new lines in rich text mode)
+	// This useEffect watches for editorState changes and scrolls, catching cases where
+	// handleEditorChange might not trigger scroll properly (e.g., Enter key creating new lines)
+	// Only needed when rich text formatting is active (Draft.js editor)
+	useEffect(() => {
+		if (editorState && draftLoaded && isRichtextActive) {
+			// Use multiple attempts with longer delays to catch DOM updates at different stages
+			// Enter key especially needs time for Draft.js to render the new line
+			// Rich text mode needs more aggressive scrolling due to Draft.js DOM update delays
+			const timeoutId1 = setTimeout(() => scrollEditorToBottom(), 0);
+			const timeoutId2 = setTimeout(() => scrollEditorToBottom(), 50);
+			const timeoutId3 = setTimeout(() => scrollEditorToBottom(), 150);
+			const timeoutId4 = setTimeout(() => scrollEditorToBottom(), 300);
+			const timeoutId5 = setTimeout(() => scrollEditorToBottom(), 500);
+			const timeoutId6 = setTimeout(() => scrollEditorToBottom(), 700);
+			return () => {
+				clearTimeout(timeoutId1);
+				clearTimeout(timeoutId2);
+				clearTimeout(timeoutId3);
+				clearTimeout(timeoutId4);
+				clearTimeout(timeoutId5);
+				clearTimeout(timeoutId6);
+			};
+		}
+	}, [editorState, draftLoaded, isRichtextActive, scrollEditorToBottom]);
+
 	const handleEditorChange = useCallback(
 		(currentEditorState) => {
 			if (
@@ -364,13 +476,17 @@ export const MessageSubmitInterfaceComponent = ({
 			}
 			setEditorState(currentEditorState);
 			onDraftMessageChange(getTypedMarkdownMessage(currentEditorState));
+			// Auto-scroll to bottom when content changes (new lines, formatting, bullet lists, etc.)
+			// scrollEditorToBottom handles multiple attempts internally to catch DOM updates
+			scrollEditorToBottom();
 		},
 		[
 			draftLoaded,
 			editorState,
 			getTypedMarkdownMessage,
 			isTyping,
-			onDraftMessageChange
+			onDraftMessageChange,
+			scrollEditorToBottom
 		]
 	);
 
@@ -379,11 +495,25 @@ export const MessageSubmitInterfaceComponent = ({
 			const newState = RichUtils.handleKeyCommand(editorState, command);
 			if (newState) {
 				handleEditorChange(newState);
+				// Auto-scroll after formatting is applied
+				// Use multiple delays to catch DOM updates at different stages
+				// Rich text mode needs more aggressive scrolling due to Draft.js DOM update delays
+				if (isRichtextActive) {
+					setTimeout(() => scrollEditorToBottom(), 0);
+					setTimeout(() => scrollEditorToBottom(), 50);
+					setTimeout(() => scrollEditorToBottom(), 150);
+					setTimeout(() => scrollEditorToBottom(), 300);
+					setTimeout(() => scrollEditorToBottom(), 500);
+					setTimeout(() => scrollEditorToBottom(), 700);
+				} else {
+					setTimeout(() => scrollEditorToBottom(), 0);
+					setTimeout(() => scrollEditorToBottom(), 50);
+				}
 				return 'handled';
 			}
 			return 'not-handled';
 		},
-		[editorState, handleEditorChange]
+		[editorState, handleEditorChange, isRichtextActive, scrollEditorToBottom]
 	);
 
 	const resizeTextarea = useCallback(() => {
@@ -486,7 +616,10 @@ export const MessageSubmitInterfaceComponent = ({
 		if (scrollButton) {
 			scrollButton.style.bottom = textareaContainerHeight + 24 + 'px';
 		}
-	}, [attachmentSelected, isRichtextActive, editorState]);
+		
+		// Auto-scroll to bottom after resize completes (especially important for bullet lists)
+		scrollEditorToBottom();
+	}, [attachmentSelected, isRichtextActive, editorState, scrollEditorToBottom]);
 
 	const toggleAbsentMessage = useCallback(() => {
 		//TODO: not react way: use state and based on that set a class
@@ -820,6 +953,8 @@ export const MessageSubmitInterfaceComponent = ({
 	const displayAttachmentToUpload = useCallback((attachment: File) => {
 		setAttachmentSelected(attachment);
 		setActiveInfo('');
+		// Clear any existing text in the input when attachment is selected
+		setEditorState(EditorState.createEmpty());
 	}, []);
 
 	const handleLargeAttachments = useCallback(() => {
@@ -992,7 +1127,27 @@ export const MessageSubmitInterfaceComponent = ({
 							<div
 								className="textarea__input"
 								ref={textareaInputRef}
-								onKeyUp={() => resizeTextarea()}
+								onKeyUp={(e) => {
+									resizeTextarea();
+									// Auto-scroll on Enter key or any key press
+									// Enter key especially needs multiple delayed scrolls to catch DOM updates
+									// Rich text mode needs more aggressive scrolling due to Draft.js DOM update delays
+									if (e.key === 'Enter' && isRichtextActive) {
+										// Multiple delayed scrolls for Enter key in rich text mode to ensure DOM has updated
+										setTimeout(() => scrollEditorToBottom(), 0);
+										setTimeout(() => scrollEditorToBottom(), 50);
+										setTimeout(() => scrollEditorToBottom(), 150);
+										setTimeout(() => scrollEditorToBottom(), 300);
+										setTimeout(() => scrollEditorToBottom(), 500);
+										setTimeout(() => scrollEditorToBottom(), 700);
+									} else if (e.key === 'Enter') {
+										// Enter key in non-rich text mode (simpler, less delays needed)
+										setTimeout(() => scrollEditorToBottom(), 0);
+										setTimeout(() => scrollEditorToBottom(), 50);
+									} else {
+										setTimeout(() => scrollEditorToBottom(), 0);
+									}
+								}}
 								onFocus={toggleAbsentMessage}
 								onBlur={toggleAbsentMessage}
 							>
@@ -1012,7 +1167,7 @@ export const MessageSubmitInterfaceComponent = ({
 									onChange={handleEditorChange}
 									readOnly={!draftLoaded || !!attachmentSelected || !!uploadProgress}
 									handleKeyCommand={handleEditorKeyCommand}
-									placeholder={placeholder}
+									placeholder={attachmentSelected ? '' : placeholder}
 									stripPastedStyles={true}
 									spellCheck={true}
 									handleBeforeInput={() =>
