@@ -16,6 +16,12 @@
 		border-radius: $input-field-border-radius;
 		outline: 0;
 
+		&--password {
+			overflow-x: auto;
+			white-space: nowrap;
+			padding-right: 50px !important; // Space for eye icon
+		}
+
 		&:hover {
 			border: 1px solid $border-hover;
 		}

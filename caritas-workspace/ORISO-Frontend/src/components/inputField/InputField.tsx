@@ -88,6 +88,7 @@ export const InputField = (props: InputFieldProps) => {
 					${inputItem.class ? ' ' + inputItem.class : ''}
 					${inputItem.labelState === 'valid' ? ' inputField__input--valid' : ''}
 					${inputItem.labelState === 'invalid' ? ' inputField__input--invalid' : ''}
+					${inputItem.type === 'password' ? ' inputField__input--password' : ''}
 				`}
 				value={inputItem.content ? inputItem.content : ``}
 				name={inputItem.name}
