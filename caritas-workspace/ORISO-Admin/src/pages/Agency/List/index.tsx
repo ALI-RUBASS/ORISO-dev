@@ -50,6 +50,21 @@ export const AgencyList = () => {
 
     const columnsData = [
         {
+            title: 'ID',
+            dataIndex: 'id',
+            key: 'id',
+            sorter: (a: AgencyData, b: AgencyData) => {
+                // Frontend sorting by ID (numeric)
+                const idA = a.id ? parseInt(a.id.toString(), 10) : 0;
+                const idB = b.id ? parseInt(b.id.toString(), 10) : 0;
+                return idA - idB;
+            },
+            width: 80,
+            ellipsis: true,
+            className: 'agencyList__column',
+            fixed: 'left',
+        },
+        {
             title: t('agency.name'),
             dataIndex: 'name',
             key: 'name',
@@ -175,7 +190,8 @@ export const AgencyList = () => {
 
     const tableChangeHandler = (pagination: any, filters: any, sorter: any) => {
         const { current, pageSize } = pagination;
-        if (sorter.field) {
+        // ID column uses frontend sorting, so skip backend sort for it
+        if (sorter.field && sorter.field.toLowerCase() !== 'id') {
             const sortBy = sorter.field.toUpperCase();
             const order = sorter.order === 'descend' ? 'DESC' : 'ASC';
             setTableState({
