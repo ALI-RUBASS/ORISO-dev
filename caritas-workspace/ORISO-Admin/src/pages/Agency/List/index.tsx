@@ -65,6 +65,33 @@ export const AgencyList = () => {
             fixed: 'left',
         },
         {
+            title: 'Created Date',
+            dataIndex: 'createDate',
+            key: 'createDate',
+            sorter: (a: AgencyData, b: AgencyData) => {
+                // Frontend sorting by creation date
+                const dateA = a.createDate ? new Date(a.createDate).getTime() : 0;
+                const dateB = b.createDate ? new Date(b.createDate).getTime() : 0;
+                return dateA - dateB;
+            },
+            width: 150,
+            ellipsis: true,
+            render: (createDate: string) => {
+                if (!createDate || createDate === 'null') return '-';
+                try {
+                    const date = new Date(createDate);
+                    return date.toLocaleDateString('de-DE', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                    });
+                } catch {
+                    return createDate;
+                }
+            },
+            className: 'agencyList__column',
+        },
+        {
             title: t('agency.name'),
             dataIndex: 'name',
             key: 'name',
@@ -190,8 +217,8 @@ export const AgencyList = () => {
 
     const tableChangeHandler = (pagination: any, filters: any, sorter: any) => {
         const { current, pageSize } = pagination;
-        // ID column uses frontend sorting, so skip backend sort for it
-        if (sorter.field && sorter.field.toLowerCase() !== 'id') {
+        // ID and createDate columns use frontend sorting, so skip backend sort for them
+        if (sorter.field && sorter.field.toLowerCase() !== 'id' && sorter.field.toLowerCase() !== 'createdate') {
             const sortBy = sorter.field.toUpperCase();
             const order = sorter.order === 'descend' ? 'DESC' : 'ASC';
             setTableState({
