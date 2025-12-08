@@ -182,6 +182,7 @@ export const MessageSubmitInterfaceComponent = ({
 		useState<XMLHttpRequest | null>(null);
 	const [editorState, setEditorState] = useState(EditorState.createEmpty());
 	const [isRichtextActive, setIsRichtextActive] = useState(false);
+	const [isInputFocused, setIsInputFocused] = useState(false);
 	const [isConsultantAbsent, setIsConsultantAbsent] = useState(
 		hasUserAuthority(AUTHORITIES.ASKER_DEFAULT, userData) &&
 			activeSession.consultant?.absent
@@ -251,6 +252,7 @@ export const MessageSubmitInterfaceComponent = ({
 
 	const { onChange: onDraftMessageChange, loaded: draftLoaded } =
 		useDraftMessage(!isRequestInProgress, setEditorState);
+
 
 	useEffect(() => {
 		if (
@@ -628,6 +630,67 @@ export const MessageSubmitInterfaceComponent = ({
 			infoWrapper.classList.toggle('messageSubmitInfoWrapper--hidden');
 		}
 	}, []);
+
+	// Track focus state for styling featureWrapper border - using activeElement check
+	useEffect(() => {
+		const checkFocus = () => {
+			const inputElement = textareaInputRef.current;
+			if (!inputElement) {
+				setIsInputFocused(false);
+				return;
+			}
+
+			// Find the Draft.js contenteditable element
+			const editorElement = inputElement.querySelector('[contenteditable="true"]');
+			const activeElement = document.activeElement;
+			
+			// Check if editor or any child is focused
+			const isFocused = activeElement === editorElement || 
+				(editorElement && editorElement.contains(activeElement)) ||
+				(activeElement && inputElement.contains(activeElement));
+
+			if (isFocused !== isInputFocused) {
+				setIsInputFocused(isFocused);
+				console.log('🎯 Focus changed:', isFocused, 'Active element:', activeElement);
+			}
+		};
+
+		// Check on focus/blur events
+		const handleFocus = (e: FocusEvent) => {
+			const inputElement = textareaInputRef.current;
+			if (inputElement && inputElement.contains(e.target as Node)) {
+				setTimeout(() => {
+					setIsInputFocused(true);
+					console.log('🎯 Focus IN detected');
+				}, 10);
+			}
+		};
+
+		const handleBlur = (e: FocusEvent) => {
+			const inputElement = textareaInputRef.current;
+			if (inputElement && inputElement.contains(e.target as Node)) {
+				setTimeout(() => {
+					setIsInputFocused(false);
+					console.log('🎯 Focus OUT detected');
+				}, 10);
+			}
+		};
+
+		// Check periodically in case events are missed
+		const interval = setInterval(checkFocus, 100);
+
+		// Initial check
+		checkFocus();
+
+		document.addEventListener('focusin', handleFocus, true);
+		document.addEventListener('focusout', handleBlur, true);
+
+		return () => {
+			clearInterval(interval);
+			document.removeEventListener('focusin', handleFocus, true);
+			document.removeEventListener('focusout', handleBlur, true);
+		};
+	}, [isInputFocused]);
 
 	const sendEnquiry = useCallback(
 		(message, isEncrypted) => {
@@ -1134,7 +1197,7 @@ export const MessageSubmitInterfaceComponent = ({
 			<form className="textarea">
 				<div className={'textarea__wrapper'}>
 					<div className="textarea__wrapper-send-message">
-						<span className="textarea__featureWrapper">
+						<span className={`textarea__featureWrapper ${isInputFocused ? 'textarea__featureWrapper--focused' : ''}`}>
 							<span className="textarea__richtextToggle">
 								<RichtextToggleIcon
 									width="20"
@@ -1180,8 +1243,6 @@ export const MessageSubmitInterfaceComponent = ({
 										setTimeout(() => scrollEditorToBottom(), 0);
 									}
 								}}
-								onFocus={toggleAbsentMessage}
-								onBlur={toggleAbsentMessage}
 							>
 								<Toolbar>
 									{(externalProps) => (

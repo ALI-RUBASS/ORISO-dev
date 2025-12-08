@@ -6,7 +6,8 @@ $message-submit-interface-textarea-box-shadow: inset 0 2px 0 0
 $navWidth: $grid-base-twelve;
 $contentWidthSmall: 100vw;
 $contentWidth: calc((100vw - #{$navWidth}) / 12 * 8);
-$inputBorder: 1px solid #cc4137;
+$inputBorder: 1px solid #fcdfdf; // Default light red border (1px)
+$inputBorderActive: 2px solid #da5248; // Active/focused red border (2px)
 $inputBoxShadow: inset 0 2px 0 0 #ffffff;
 
 .session,
@@ -51,7 +52,7 @@ $inputBoxShadow: inset 0 2px 0 0 #ffffff;
 				padding: 16px 12px !important;
 				border-radius: 28px !important;
 				box-shadow: 0 2px 16px rgb(255, 255, 255, 0.05) !important;
-				border: 2px solid #f8b9b9 !important;
+				border: 1px solid #fcdfdf !important;
 			}
 
 			&-booking {
@@ -117,19 +118,19 @@ $inputBoxShadow: inset 0 2px 0 0 #ffffff;
 		&__input {
 			line-height: 20px;
 			width: 100%;
-			border: $inputBorder;
+			border: $inputBorder; // Light red when not focused
 			border-radius: 0 $enquiry-input-border-radius
 				$enquiry-input-border-radius 0;
 			background-color: $white;
 			box-sizing: border-box;
 			
 			
-			// Remove focus outline/border
+			// Active/focused state - red border
 			&:focus,
 			&:focus-visible,
 			&:focus-within {
 				outline: none !important;
-				border: $inputBorder;
+				border: $inputBorderActive; // Red when focused
 			}
 
 			&::placeholder,
@@ -233,7 +234,10 @@ $inputBoxShadow: inset 0 2px 0 0 #ffffff;
 		&__featureWrapper {
 			display: flex;
 			flex-direction: column;
-			border: $inputBorder;
+			border-top: 1px solid #fcdfdf; // Default 1px
+			border-bottom: 1px solid #fcdfdf; // Default 1px
+			border-left: 1px solid #fcdfdf; // Default 1px
+			border-right: none;
 			justify-content: flex-end;
 			align-items: center;
 			width: $sendInputHeight;
@@ -241,9 +245,16 @@ $inputBoxShadow: inset 0 2px 0 0 #ffffff;
 			border-radius: $enquiry-input-border-radius 0 0
 				$enquiry-input-border-radius;
 			background: $white;
-			border: $inputBorder;
 		
 			position: relative;
+		}
+
+		// When input is focused, featureWrapper should also have red border (top, bottom, left only) - 2px
+		&__featureWrapper--focused {
+			border-top: 2px solid #da5248 !important;
+			border-bottom: 2px solid #da5248 !important;
+			border-left: 2px solid #da5248 !important;
+			border-right: none !important;
 		}
 
 		&__richtextToggle {
