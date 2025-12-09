@@ -1339,6 +1339,7 @@ export const MessageSubmitInterfaceComponent = ({
 								deactivated={
 									uploadProgress || isRequestInProgress
 								}
+								isEmpty={!getTypedMarkdownMessage() || getTypedMarkdownMessage().trim().length === 0}
 							/>
 						</div>
 					</div>

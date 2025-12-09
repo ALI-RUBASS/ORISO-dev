@@ -5,6 +5,7 @@ import { ReactComponent as SendIcon } from '../../resources/img/icons/paper-plan
 interface SendMessageButtonProps {
 	clicked?: boolean;
 	deactivated?: boolean;
+	isEmpty?: boolean;
 	handleSendButton: Function;
 }
 
@@ -18,7 +19,9 @@ export const SendMessageButton = (props: SendMessageButtonProps) => {
 			}
 			className={`textarea__iconWrapper ${
 				props.clicked ? 'textarea__iconWrapper--clicked' : ''
-			} ${props.deactivated ? 'textarea__iconWrapper--deactivated' : ''}`}
+			} ${props.deactivated ? 'textarea__iconWrapper--deactivated' : ''} ${
+				props.isEmpty ? 'textarea__iconWrapper--empty' : ''
+			}`}
 			title={translate('enquiry.write.input.button.title')}
 			aria-label={translate('enquiry.write.input.button.title')}
 		>

@@ -375,14 +375,6 @@ export const SessionListItemComponent = ({
 								attachment={activeSession.item.attachment}
 							/>
 						)}
-						{activeSession.item.active && (
-							<Tag
-								text={translate(
-									'groupChat.listItem.activeLabel'
-								)}
-								color="green"
-							/>
-						)}
 					</div>
 				</div>
 			</div>

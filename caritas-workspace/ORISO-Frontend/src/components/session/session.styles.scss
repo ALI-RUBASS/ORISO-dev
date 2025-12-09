@@ -51,7 +51,11 @@ $session-scroll-to-bottom-radius: $button-border-radius !default;
 		z-index: 2;
 
 		&--withTyping {
-			position: relative;
+			position: absolute;
+			bottom: 0;
+			left: 0;
+			right: 0;
+			z-index: 1000;
 		}
 	}
 

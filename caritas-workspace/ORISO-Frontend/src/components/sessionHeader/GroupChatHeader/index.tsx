@@ -334,82 +334,38 @@ export const GroupChatHeader = ({
 					<BackIcon />
 				</Link>
 				<div className="sessionInfo__username sessionInfo__username--deactivate sessionInfo__username--groupChat">
-					{hasUserAuthority(
-						AUTHORITIES.CONSULTANT_DEFAULT,
-						userData
-					) ? (
-						<Link
-							to={`/sessions/consultant/${sessionView}/${activeSession.item.groupId}/${activeSession.item.id}/groupChatInfo${sessionTabPath}`}
-						>
-							<div className="sessionInfo__titleRow">
-								<div className="sessionInfo__groupIcon">
-									<GroupChatAvatarIcon />
-								</div>
-								<h3>{typeof activeSession.item.topic === 'string' ? activeSession.item.topic : activeSession.item.topic?.name || ''}</h3>
-							</div>
-							{/* Matrix room participants */}
-							{isLoadingMembers ? (
-								<div className="sessionInfo__participants sessionInfo__participants--loading">
-									<div className="sessionInfo__participants__skeleton"></div>
-								</div>
-							) : matrixMembers.length > 0 ? (
-								<div className="sessionInfo__participants">
-									{matrixMembers
-										.filter(member => {
-											// Filter out system users and current user if needed
-											const userId = member.userId || '';
-											return !userId.includes('@system') && !userId.includes('@caritas.local');
-										})
-										.map((member, index, filteredMembers) => {
-											// Extract display name from userId (format: @username:domain)
-											const userId = member.userId || '';
-											const displayName = member.name || userId.split(':')[0]?.replace('@', '') || userId;
-											return (
-												<span key={member.userId || index} className="sessionInfo__participant">
-													{decodeUsername(displayName)}
-													{index < filteredMembers.length - 1 && ', '}
-												</span>
-											);
-										})}
-								</div>
-							) : null}
-						</Link>
-					) : (
-						<>
-							<div className="sessionInfo__titleRow">
-								<div className="sessionInfo__groupIcon">
-									<GroupChatAvatarIcon />
-								</div>
-								<h3>{typeof activeSession.item.topic === 'string' ? activeSession.item.topic : activeSession.item.topic?.name || ''}</h3>
-							</div>
-							{/* Matrix room participants */}
-							{isLoadingMembers ? (
-								<div className="sessionInfo__participants sessionInfo__participants--loading">
-									<div className="sessionInfo__participants__skeleton"></div>
-								</div>
-							) : matrixMembers.length > 0 ? (
-								<div className="sessionInfo__participants">
-									{matrixMembers
-										.filter(member => {
-											// Filter out system users
-											const userId = member.userId || '';
-											return !userId.includes('@system') && !userId.includes('@caritas.local');
-										})
-										.map((member, index, filteredMembers) => {
-											// Extract display name from userId (format: @username:domain)
-											const userId = member.userId || '';
-											const displayName = member.name || userId.split(':')[0]?.replace('@', '') || userId;
-											return (
-												<span key={member.userId || index} className="sessionInfo__participant">
-													{decodeUsername(displayName)}
-													{index < filteredMembers.length - 1 && ', '}
-												</span>
-											);
-										})}
-								</div>
-							) : null}
-						</>
-					)}
+					<div className="sessionInfo__titleRow">
+						<div className="sessionInfo__groupIcon">
+							<GroupChatAvatarIcon />
+						</div>
+						<h3>{typeof activeSession.item.topic === 'string' ? activeSession.item.topic : activeSession.item.topic?.name || ''}</h3>
+					</div>
+					{/* Matrix room participants */}
+					{isLoadingMembers ? (
+						<div className="sessionInfo__participants sessionInfo__participants--loading">
+							<div className="sessionInfo__participants__skeleton"></div>
+						</div>
+					) : matrixMembers.length > 0 ? (
+						<div className="sessionInfo__participants">
+							{matrixMembers
+								.filter(member => {
+									// Filter out system users and current user if needed
+									const userId = member.userId || '';
+									return !userId.includes('@system') && !userId.includes('@caritas.local');
+								})
+								.map((member, index, filteredMembers) => {
+									// Extract display name from userId (format: @username:domain)
+									const userId = member.userId || '';
+									const displayName = member.name || userId.split(':')[0]?.replace('@', '') || userId;
+									return (
+										<span key={member.userId || index} className="sessionInfo__participant">
+											{decodeUsername(displayName)}
+											{index < filteredMembers.length - 1 && ', '}
+										</span>
+									);
+								})}
+						</div>
+					) : null}
 				</div>
 
 				{(!isActive || isJoinGroupChatView) && isConsultant && (

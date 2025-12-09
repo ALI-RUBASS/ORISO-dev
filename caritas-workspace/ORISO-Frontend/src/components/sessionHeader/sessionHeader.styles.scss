@@ -9,7 +9,13 @@ $iconSize: 24px;
 	padding: $grid-base-two $grid-base-two;
 	min-height: 72px;
 	background-color: $session-header-background-color;
-	border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+	box-sizing: border-box;
+	border-bottom: 1px solid rgba(80, 80, 80, 0.1);
+	margin-left: 1px;
+	// Ensure crisp 1px border rendering
+	-webkit-backface-visibility: hidden;
+	backface-visibility: hidden;
+	transform: translateZ(0);
 
 	@include breakpoint($fromMedium) {
 		padding: $grid-base-three;
@@ -28,6 +34,7 @@ $iconSize: 24px;
 		justify-content: space-between;
 		width: 100%;
 		align-items: center;
+		box-sizing: border-box;
 	}
 
 	&__feedbackHeaderWrapper {
