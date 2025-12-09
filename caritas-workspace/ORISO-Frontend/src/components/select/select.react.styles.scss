@@ -20,8 +20,14 @@ $inputHeight: 50px;
 	}
 
 	&__inputWrapper {
-		height: $inputHeight;
-		padding: 15px 0;
+		// Allow expansion for multi-select - use min-height instead of fixed height
+		// Increased min-height to make box bigger initially (80px for multi-select)
+		min-height: $inputHeight;
+		height: auto;
+		padding: 8px 8px;
+		display: flex;
+		flex-wrap: wrap;
+		align-items: flex-start;
 	}
 
 	&__input {

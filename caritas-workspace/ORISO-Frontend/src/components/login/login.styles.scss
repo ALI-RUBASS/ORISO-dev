@@ -113,6 +113,17 @@ $link-hover-text-decoration: $link-text-decoration !default;
 				color: #9ca3af;
 			}
 		}
+
+		// Center icons vertically
+		.inputField__icon {
+			top: 50% !important;
+			transform: translateY(-50%) !important;
+		}
+
+		.inputField__passwordToggle {
+			top: 50% !important;
+			transform: translateY(-50%) !important;
+		}
 	}
 
 	&__headline {
@@ -193,7 +204,8 @@ $link-hover-text-decoration: $link-text-decoration !default;
 		}
 
 		.inputField__icon {
-			top: 2px;
+			top: 50%;
+			transform: translateY(-50%);
 		}
 	}
 

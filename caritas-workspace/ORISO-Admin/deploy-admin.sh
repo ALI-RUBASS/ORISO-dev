@@ -17,3 +17,4 @@ kubectl rollout status deployment/admin -n caritas --timeout=120s
 echo "✅ Admin deployed successfully!"
 kubectl get pods -n caritas -l app=admin
 
+
