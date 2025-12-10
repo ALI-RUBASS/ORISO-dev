@@ -107,7 +107,7 @@ class CallManager {
                     if (room) {
                         const memberCount = room.getJoinedMemberCount();
                         const members = room.getJoinedMembers();
-                        isGroup = memberCount > 2; // More than 2 members = group call
+                        isGroup = memberCount > 0; // TEMPORARY: All calls treated as group calls
                         
                         console.log(`   ✅ Room member count: ${memberCount}`);
                         console.log(`   ✅ Joined members:`, members.map(m => m.userId));
@@ -228,8 +228,8 @@ class CallManager {
                     const room = client.getRoom(roomId);
                     if (room) {
                         const memberCount = room.getJoinedMemberCount();
-                        // Only treat as group if MORE than 2 members (3+)
-                        isGroup = memberCount > 2;
+                        // TEMPORARY: All calls treated as group calls
+                        isGroup = memberCount > 0;
                         
                         console.log(`   ✅ Room member count: ${memberCount}`);
                         console.log(`   ✅ Is group call (by member count): ${isGroup}`);

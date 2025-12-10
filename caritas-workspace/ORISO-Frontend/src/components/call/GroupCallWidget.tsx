@@ -238,12 +238,12 @@ export const GroupCallWidget: React.FC = () => {
                 /* Connecting state */
                 <div className="connecting-popup">
                     <div className="connecting-header">
-                        <span>GROUP CALL</span>
+                        <span>CALL</span>
                     </div>
                     <div className="connecting-content">
                         <div className="call-avatar-large">G</div>
                         <h2>Connecting...</h2>
-                        <p>Setting up group call</p>
+                        <p>Setting up call</p>
                     </div>
                 </div>
             )}
