@@ -692,6 +692,65 @@ export const MessageSubmitInterfaceComponent = ({
 		};
 	}, [isInputFocused]);
 
+	// Handle mobile keyboard - scroll input into view when focused
+	useEffect(() => {
+		const inputElement = textareaInputRef.current;
+		if (!inputElement) return;
+
+		const isMobile = window.innerWidth <= 900;
+		if (!isMobile) return;
+
+		const editorElement = inputElement.querySelector('[contenteditable="true"]') as HTMLElement;
+		if (!editorElement) return;
+
+		const scrollInputIntoView = () => {
+			// Use visual viewport if available (modern mobile browsers)
+			if (window.visualViewport) {
+				// Wait for keyboard to appear
+				setTimeout(() => {
+					editorElement.scrollIntoView({ 
+						behavior: 'smooth', 
+						block: 'center',
+						inline: 'nearest'
+					});
+				}, 300);
+			} else {
+				// Fallback for older browsers
+				setTimeout(() => {
+					editorElement.scrollIntoView({ 
+						behavior: 'smooth', 
+						block: 'center',
+						inline: 'nearest'
+					});
+				}, 300);
+			}
+		};
+
+		const handleFocus = () => {
+			scrollInputIntoView();
+		};
+
+		// Handle visual viewport resize (keyboard appearing/disappearing)
+		const handleViewportResize = () => {
+			if (document.activeElement === editorElement || editorElement.contains(document.activeElement)) {
+				scrollInputIntoView();
+			}
+		};
+
+		editorElement.addEventListener('focus', handleFocus);
+		
+		if (window.visualViewport) {
+			window.visualViewport.addEventListener('resize', handleViewportResize);
+		}
+
+		return () => {
+			editorElement.removeEventListener('focus', handleFocus);
+			if (window.visualViewport) {
+				window.visualViewport.removeEventListener('resize', handleViewportResize);
+			}
+		};
+	}, []);
+
 	const sendEnquiry = useCallback(
 		(message, isEncrypted) => {
 			return apiSendEnquiry(

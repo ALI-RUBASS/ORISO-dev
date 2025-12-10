@@ -23,6 +23,16 @@ $session-scroll-to-bottom-radius: $button-border-radius !default;
 		left: 0;
 		right: 0;
 		z-index: 1000;
+
+		// On mobile, use fixed positioning so input stays above keyboard
+		@media screen and (max-width: 899px) {
+			position: fixed;
+			bottom: 0;
+			left: 0;
+			right: 0;
+			// Account for safe area insets on mobile devices
+			padding-bottom: env(safe-area-inset-bottom, 0);
+		}
 	}
 
 	& > div:first-child {
@@ -56,6 +66,15 @@ $session-scroll-to-bottom-radius: $button-border-radius !default;
 			left: 0;
 			right: 0;
 			z-index: 1000;
+
+			// On mobile, use fixed positioning so input stays above keyboard
+			@media screen and (max-width: 899px) {
+				position: fixed;
+				bottom: 0;
+				left: 0;
+				right: 0;
+				padding-bottom: env(safe-area-inset-bottom, 0);
+			}
 		}
 	}
 

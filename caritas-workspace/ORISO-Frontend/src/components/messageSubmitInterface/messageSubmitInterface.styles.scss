@@ -24,6 +24,18 @@ $inputBoxShadow: inset 0 2px 0 0 #ffffff;
 			padding: 20px $grid-base-three;
 		}
 
+		// On mobile, ensure no extra spacing and proper positioning
+		@media screen and (max-width: 899px) {
+			padding: 20px $grid-base-two;
+			padding-bottom: 20px;
+			position: fixed;
+			bottom: 0;
+			left: 0;
+			right: 0;
+			background-color: #ffffff;
+			padding-bottom: calc(20px + env(safe-area-inset-bottom, 0));
+		}
+
 		.checkbox {
 			&__wrapper {
 				justify-content: flex-start;
@@ -53,6 +65,13 @@ $inputBoxShadow: inset 0 2px 0 0 #ffffff;
 				border-radius: 28px !important;
 				box-shadow: 0 2px 16px rgb(255, 255, 255, 0.05) !important;
 				border: 1px solid #fcdfdf !important;
+
+				// On mobile, ensure wrapper doesn't extend beyond viewport
+				@media screen and (max-width: 899px) {
+					margin-bottom: 0;
+					border-bottom-left-radius: 0;
+					border-bottom-right-radius: 0;
+				}
 			}
 
 			&-booking {
