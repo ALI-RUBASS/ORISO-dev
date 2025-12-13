@@ -1,0 +1,115 @@
+.consultantSearchLoader {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	height: 100%;
+	flex-shrink: 0;
+
+	&__circle {
+		width: 100%;
+		height: 100%;
+		border-radius: 50%;
+		background-color: #000000;
+        padding-right: 5px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		position: relative;
+		overflow: hidden; // Keep circle shape - this controls what's visible
+	}
+
+	&__loader {
+		position: relative;
+		background-color: rgb(204, 30, 28);
+		// Size relative to circle: 40px base fits in 40px circle = 100% height
+		// But we need smaller to account for rotation and magnetism animation
+		height: 60%;
+		width: 15%;
+		border-radius: 6px 0px 0px 6px;
+		animation: consultantSearchLoader-rotate 5s infinite;
+		transform-origin: center center;
+	}
+
+	&__magnetism {
+		position: absolute;
+		color: rgb(0, 151, 252);
+		bottom: 0;
+		width: 200%; // Extends beyond loader for animation
+		left: 0%;
+		height: 100%; // Same height as loader
+		border: solid 2px currentColor;
+		border-color: currentColor transparent transparent transparent;
+		border-radius: 50%;
+		transform: rotate(90deg);
+		animation: consultantSearchLoader-go 0.5s ease-in-out infinite;
+	}
+
+	&__loader::before {
+		content: "";
+		left: 15%;
+		position: absolute;
+		top: 0;
+		background: rgb(204, 30, 28);
+		background: linear-gradient(
+			90deg,
+			rgba(204, 30, 28, 1) 0%,
+			rgba(204, 30, 28, 1) 50%,
+			rgba(158, 158, 158, 1) 50%,
+			rgba(184, 184, 184, 1) 100%
+		);
+		height: 25%;
+		width: 200%;
+	}
+
+	&__loader::after {
+		content: "";
+		left: 15%;
+		position: absolute;
+		bottom: 0;
+		background: rgb(204, 30, 28);
+		background: linear-gradient(
+			90deg,
+			rgba(204, 30, 28, 1) 0%,
+			rgba(204, 30, 28, 1) 50%,
+			rgba(158, 158, 158, 1) 50%,
+			rgba(184, 184, 184, 1) 100%
+		);
+		height: 25%;
+		width: 200%;
+	}
+}
+
+@keyframes consultantSearchLoader-rotate {
+	0% {
+		transform: rotate(-30deg);
+	}
+
+	50% {
+		transform: rotate(30deg);
+	}
+
+	100% {
+		transform: rotate(-30deg);
+	}
+}
+
+@keyframes consultantSearchLoader-go {
+	0% {
+		left: 0%;
+		width: 75%;
+		opacity: 1;
+	}
+
+	50% {
+		left: 100%;
+		width: 150%;
+		opacity: 0.5;
+	}
+
+	100% {
+		width: 225%;
+		left: 200%;
+		opacity: 0;
+	}
+}

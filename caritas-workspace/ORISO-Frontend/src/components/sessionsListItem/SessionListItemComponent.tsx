@@ -8,6 +8,7 @@ import {
 	MILLISECONDS_PER_SECOND
 } from '../../utils/dateHelpers';
 import { UserAvatar } from '../message/UserAvatar';
+import { ConsultantSearchLoader } from '../sessionHeader/ConsultantSearchLoader';
 import { GroupChatAvatarIcon } from '../../resources/img/icons';
 import { SESSION_LIST_TAB } from '../session/sessionHelpers';
 import {
@@ -441,12 +442,16 @@ export const SessionListItemComponent = ({
 				</div>
 				<div className="sessionsListItem__row">
 					<div className="sessionsListItem__icon">
-						<UserAvatar
-							username={activeSession.user?.username || activeSession.consultant?.username || 'User'}
-							displayName={activeSession.user?.username || activeSession.consultant?.displayName}
-							userId={activeSession.user?.username || activeSession.consultant?.id || 'unknown'}
-							size="32px"
-						/>
+						{isAsker && !hasConsultantData ? (
+							<ConsultantSearchLoader size="32px" />
+						) : (
+							<UserAvatar
+								username={activeSession.user?.username || activeSession.consultant?.username || 'User'}
+								displayName={activeSession.user?.username || activeSession.consultant?.displayName}
+								userId={activeSession.user?.username || activeSession.consultant?.id || 'unknown'}
+								size="32px"
+							/>
+						)}
 					</div>
 					<div
 						className={clsx(
