@@ -41,6 +41,7 @@ import { apiPostError, TError } from '../../api/apiPostError';
 import { useE2EE } from '../../hooks/useE2EE';
 import { MessageSubmitInterfaceSkeleton } from '../messageSubmitInterface/messageSubmitInterfaceSkeleton';
 import { EncryptionBanner } from './EncryptionBanner';
+import { ConsultantMatchingAnimation } from '../message/ConsultantMatchingAnimation';
 
 const MessageSubmitInterfaceComponent = lazy(() =>
 	import('../messageSubmitInterface/messageSubmitInterfaceComponent').then(
@@ -68,6 +69,17 @@ export const SessionItemComponent = (props: SessionItemProps) => {
 	const { type } = useContext(SessionTypeContext);
 
 	const messages = useMemo(() => props.messages, [props && props.messages]); // eslint-disable-line react-hooks/exhaustive-deps
+	
+	// Check if we should show the consultant matching animation
+	// Show it when: user is asker and no consultant assigned, and there are messages
+	const shouldShowMatchingAnimation = useMemo(() => {
+		const isAsker = hasUserAuthority(AUTHORITIES.ASKER_DEFAULT, userData);
+		const hasNoConsultant = !activeSession.consultant;
+		const hasMessages = messages && messages.length > 0;
+
+		return isAsker && hasNoConsultant && hasMessages;
+	}, [userData, activeSession.consultant, messages]);
+	
 	const [initialScrollCompleted, setInitialScrollCompleted] = useState(false);
 	const scrollContainerRef = React.useRef<HTMLDivElement>(null);
 	const [isScrolledToBottom, setIsScrolledToBottom] = useState(true);
@@ -426,6 +438,10 @@ export const SessionItemComponent = (props: SessionItemProps) => {
 								/>
 							</React.Fragment>
 						))}
+					{/* Show matching animation after messages when consultant search is active */}
+					{shouldShowMatchingAnimation && (
+						<ConsultantMatchingAnimation />
+					)}
 					<div
 						className={`session__scrollToBottom ${
 							isScrolledToBottom

@@ -20,3 +20,4 @@ kubectl get pods -n caritas -l app=admin
 
 
 
+
