@@ -10,6 +10,8 @@ import {
 import { UserAvatar } from '../message/UserAvatar';
 import { ConsultantSearchLoader } from '../sessionHeader/ConsultantSearchLoader';
 import { GroupChatAvatarIcon } from '../../resources/img/icons';
+import oneOnOneImage from '../../resources/img/illustrations/one-on-one.svg';
+import teamImage from '../../resources/img/illustrations/Team.svg';
 import { SESSION_LIST_TAB } from '../session/sessionHelpers';
 import {
 	AUTHORITIES,
@@ -376,6 +378,13 @@ export const SessionListItemComponent = ({
 								attachment={activeSession.item.attachment}
 							/>
 						)}
+						<div className="sessionsListItem__consultingTypeIcon">
+							<img
+								src={teamImage}
+								alt="Team Beratung"
+								className="sessionsListItem__consultingTypeIcon--team"
+							/>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -492,6 +501,13 @@ export const SessionListItemComponent = ({
 							listItemAskerRcId={activeSession.item.askerRcId}
 						/>
 					)}
+					<div className="sessionsListItem__consultingTypeIcon">
+						<img
+							src={activeSession.isGroup ? teamImage : oneOnOneImage}
+							alt={activeSession.isGroup ? 'Team Beratung' : '1-1 Beratung'}
+							className={activeSession.isGroup ? 'sessionsListItem__consultingTypeIcon--team' : 'sessionsListItem__consultingTypeIcon--oneOnOne'}
+						/>
+					</div>
 				</div>
 			</div>
 		</div>
