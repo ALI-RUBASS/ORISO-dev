@@ -26,6 +26,15 @@
 		}
 	}
 
+	&__footer {
+		// Add more bottom padding on mobile to prevent overlapping with fixed registration buttons (96px height)
+		@media screen and (max-width: 899px) {
+			padding-bottom: 120px; // Account for 96px button bar + extra spacing
+			margin-top: -60px;
+			display: none;
+		}
+	}
+
 	.stageLayout__header > * {
 		padding: 0 8px;
 	}

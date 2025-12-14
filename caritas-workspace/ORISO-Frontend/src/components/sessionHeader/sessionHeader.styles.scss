@@ -35,6 +35,7 @@ $iconSize: 24px;
 		width: 100%;
 		align-items: center;
 		box-sizing: border-box;
+		margin-left: 10px;
 	}
 
 	&__feedbackHeaderWrapper {
@@ -45,6 +46,7 @@ $iconSize: 24px;
 			text-align: center;
 			margin-left: -36px;
 			cursor: auto;
+			
 
 			@include breakpoint($fromLarge) {
 				text-align: left;
@@ -106,6 +108,7 @@ $iconSize: 24px;
 			gap: 8px;
 			min-width: 0;
 			overflow: hidden;
+			margin-left: 20px;
 		}
 
 		&--deactivate {

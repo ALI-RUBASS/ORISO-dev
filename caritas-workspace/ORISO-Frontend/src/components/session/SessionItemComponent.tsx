@@ -41,8 +41,7 @@ import { apiPostError, TError } from '../../api/apiPostError';
 import { useE2EE } from '../../hooks/useE2EE';
 import { MessageSubmitInterfaceSkeleton } from '../messageSubmitInterface/messageSubmitInterfaceSkeleton';
 import { EncryptionBanner } from './EncryptionBanner';
-import { ConsultantMatchingAnimation } from '../message/ConsultantMatchingAnimation';
-import { Text } from '../text/Text';
+
 const MessageSubmitInterfaceComponent = lazy(() =>
 	import('../messageSubmitInterface/messageSubmitInterfaceComponent').then(
 		(m) => ({ default: m.MessageSubmitInterfaceComponent })
@@ -69,17 +68,6 @@ export const SessionItemComponent = (props: SessionItemProps) => {
 	const { type } = useContext(SessionTypeContext);
 
 	const messages = useMemo(() => props.messages, [props && props.messages]); // eslint-disable-line react-hooks/exhaustive-deps
-	
-	// Check if we should show the consultant matching animation
-	// Show it when: user is asker and no consultant assigned, and there are messages
-	const shouldShowMatchingAnimation = useMemo(() => {
-		const isAsker = hasUserAuthority(AUTHORITIES.ASKER_DEFAULT, userData);
-		const hasNoConsultant = !activeSession.consultant;
-		const hasMessages = messages && messages.length > 0;
-
-		return isAsker && hasNoConsultant && hasMessages;
-	}, [userData, activeSession.consultant, messages]);
-	
 	const [initialScrollCompleted, setInitialScrollCompleted] = useState(false);
 	const scrollContainerRef = React.useRef<HTMLDivElement>(null);
 	const [isScrolledToBottom, setIsScrolledToBottom] = useState(true);
@@ -201,16 +189,9 @@ export const SessionItemComponent = (props: SessionItemProps) => {
 	}, [isScrolledToBottom]); // eslint-disable-line
 
 	const getPlaceholder = () => {
-		const isAsker = hasUserAuthority(AUTHORITIES.ASKER_DEFAULT, userData);
-		const hasNoConsultant = !activeSession.consultant;
-		const hasMessages = messages && messages.length > 0;
-		
 		if (activeSession.isGroup) {
 			return translate('enquiry.write.input.placeholder.groupChat');
-		} else if (isAsker && hasNoConsultant && hasMessages) {
-			// After first message in consultant search state
-			return translate('enquiry.write.input.placeholder.askerAfterFirstMessage');
-		} else if (isAsker) {
+		} else if (hasUserAuthority(AUTHORITIES.ASKER_DEFAULT, userData)) {
 			return translate('enquiry.write.input.placeholder.asker');
 		} else if (hasUserAuthority(AUTHORITIES.CONSULTANT_DEFAULT, userData)) {
 			return translate('enquiry.write.input.placeholder.consultant');
@@ -445,22 +426,6 @@ export const SessionItemComponent = (props: SessionItemProps) => {
 								/>
 							</React.Fragment>
 						))}
-						{/* Show "Forgot something?" text after first message when consultant search is active */}
-					{hasUserAuthority(AUTHORITIES.ASKER_DEFAULT, userData) &&
-						!activeSession.consultant &&
-						messages &&
-						messages.length > 0 && (
-							<div className="session__forgotSomething">
-								<Text
-									text={translate('enquiry.forgotSomething.text')}
-									type="infoSmall"
-								/>
-							</div>
-						)}
-					{/* Show matching animation after messages when consultant search is active */}
-					{shouldShowMatchingAnimation && (
-						<ConsultantMatchingAnimation />
-					)}
 					<div
 						className={`session__scrollToBottom ${
 							isScrolledToBottom

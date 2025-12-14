@@ -199,47 +199,20 @@ export const SessionHeaderComponent = (props: SessionHeaderProps) => {
 			{(hasUserAuthority(AUTHORITIES.ASKER_DEFAULT, userData) ||
 				hasUserAuthority(AUTHORITIES.CONSULTANT_DEFAULT, userData)) && (
 				<div className="sessionInfo__metaInfo">
-					{!activeSession.agency ? (
-						<div className="sessionInfo__metaInfo__content">
-							{topic?.name || ''}
-						</div>
-					) : null}
-					{preparedUserSessionData
-						? preparedUserSessionData.map((item, index) =>
-								item.value &&
-								!(
-									item.type === 'age' && item.value === 'null'
-								) ? (
-									<div
-										className="sessionInfo__metaInfo__content"
-										key={index}
-									>
-										{translate(
-											handleNumericTranslation(
-												translateBase,
-												item.type,
-												item.value
-											)
-										)}
-									</div>
-								) : null
-							)
-						: null}
 					{activeSession.agency?.name && (
 						<div className="sessionInfo__metaInfo__content">
-							{' '}
 							{translate(
 								[
 									`agency.${activeSession.agency.id}.name`,
 									activeSession.agency.name
 								],
 								{ ns: 'agencies' }
-							)}{' '}
+							)}
 						</div>
 					)}
-					{activeSession.agency && (
+					{topic?.name && (
 						<div className="sessionInfo__metaInfo__content">
-							{translate('consultant.jobTitle')}
+							{topic.name}
 						</div>
 					)}
 				</div>

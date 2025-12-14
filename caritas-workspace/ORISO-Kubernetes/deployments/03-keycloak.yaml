@@ -52,22 +52,3 @@ spec:
       schedulerName: default-scheduler
       securityContext: {}
       terminationGracePeriodSeconds: 30
-status:
-  availableReplicas: 1
-  conditions:
-  - lastTransitionTime: "2025-10-14T18:39:27Z"
-    lastUpdateTime: "2025-10-14T18:39:27Z"
-    message: Deployment has minimum availability.
-    reason: MinimumReplicasAvailable
-    status: "True"
-    type: Available
-  - lastTransitionTime: "2025-10-14T18:39:02Z"
-    lastUpdateTime: "2025-10-14T18:39:27Z"
-    message: ReplicaSet "keycloak-554947bfb4" has successfully progressed.
-    reason: NewReplicaSetAvailable
-    status: "True"
-    type: Progressing
-  observedGeneration: 1
-  readyReplicas: 1
-  replicas: 1
-  updatedReplicas: 1
