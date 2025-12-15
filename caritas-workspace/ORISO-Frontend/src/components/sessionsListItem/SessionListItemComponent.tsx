@@ -45,7 +45,7 @@ import { ALIAS_MESSAGE_TYPES } from '../../api/apiSendAliasMessage';
 import { useTranslation } from 'react-i18next';
 import { useAppConfig } from '../../hooks/useAppConfig';
 import { RocketChatUsersOfRoomContext } from '../../globalState/provider/RocketChatUsersOfRoomProvider';
-
+import { RoomMember } from 'matrix-js-sdk';
 interface SessionListItemProps {
 	defaultLanguage: string;
 	itemRef?: any;
@@ -59,6 +59,7 @@ export const SessionListItemComponent = ({
 	handleKeyDownLisItemContent,
 	index
 }: SessionListItemProps) => {
+	const [matrixMembers, setMatrixMembers] = useState<RoomMember[]>([]);
 	const { t: translate } = useTranslation(['common']);
 	const tenantData = useTenant();
 	const settings = useAppConfig();
@@ -105,6 +106,14 @@ export const SessionListItemComponent = ({
 	const { autoSelectPostcode } =
 		consultingType?.registration ||
 		settings.registration.consultingTypeDefaults;
+
+		useEffect(() => {
+			setMatrixMembers(new Array(3) as unknown as RoomMember[]);
+		}, []);
+		
+		
+		
+		
 
 	useEffect(() => {
 		if (!ready) {
@@ -381,32 +390,29 @@ export const SessionListItemComponent = ({
 						</div>
 					</div>
 					<div className="sessionsListItem__row">
-						<div className="sessionsListItem__icon sessionsListItem__icon--groupChat">
-							<div className="sessionsListItem__stackedAvatars">
-								<div className="sessionsListItem__avatarWrapper">
-									<UserAvatar
-										username={activeSession.consultant?.username || 'C'}
-										displayName={activeSession.consultant?.displayName || activeSession.consultant?.username || 'C'}
-										userId={activeSession.consultant?.id || activeSession.consultant?.username || 'user2'}
-										size="32px"
-									/>
-								</div>
-								<div className="sessionsListItem__avatarWrapper">
-									<UserAvatar
-										username={activeSession.user?.username || 'U'}
-										displayName={activeSession.user?.username || 'U'}
-										userId={activeSession.user?.username || 'user1'}
-										size="32px"
-									/>
-								</div>
-								{additionalMembers > 0 && (
-									<div className="sessionsListItem__avatarWrapper sessionsListItem__avatarWrapper--plus">
-										<div className="sessionsListItem__plusAvatar">
-											+{additionalMembers}
-										</div>
-									</div>
-								)}
-							</div>
+					<div className="sessionInfo__groupIcon">
+					<div className="sessionsListItem__stackedAvatars">
+	{/* Always render 2 avatar placeholders */}
+	{[0, 1].map((_, index) => (
+		<div
+			key={index}
+			className="sessionsListItem__avatarWrapper"
+		>
+			<UserAvatar
+				username={`placeholder-${index}`}
+				displayName="User"
+				userId={`placeholder-${index}`}
+				size="32px"
+			/>
+		</div>
+	))}
+
+	{/* Optional third circle */}
+	<div className="sessionsListItem__avatarWrapper sessionsListItem__avatarWrapper--plus">
+		<div className="sessionsListItem__plusAvatar">+1</div>
+	</div>
+</div>
+
 						</div>
 						<div
 							className={clsx(
