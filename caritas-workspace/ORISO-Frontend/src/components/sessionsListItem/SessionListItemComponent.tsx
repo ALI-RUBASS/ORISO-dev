@@ -9,7 +9,7 @@ import {
 } from '../../utils/dateHelpers';
 import { UserAvatar } from '../message/UserAvatar';
 import { ConsultantSearchLoader } from '../sessionHeader/ConsultantSearchLoader';
-import { GroupChatAvatarIcon, MenuVerticalIcon } from '../../resources/img/icons';
+import { MenuVerticalIcon } from '../../resources/img/icons';
 import oneOnOneImage from '../../resources/img/illustrations/one-on-one.svg';
 import teamImage from '../../resources/img/illustrations/Team.svg';
 import { SESSION_LIST_TAB } from '../session/sessionHelpers';
@@ -348,15 +348,14 @@ export const SessionListItemComponent = ({
 				>
 					<div className="sessionsListItem__row">
 						<div className="sessionsListItem__rowLeft">
-							{topic?.name && (
+							{activeSession.isGroup && (
 								<div
 									className="sessionsListItem__topic"
 									style={{
-										backgroundColor:
-											tenantData?.theming?.primaryColor
+										backgroundColor:'#cc1e1c'
 									}}
 								>
-									{topic.name}
+									Consultants
 								</div>
 							)}
 						</div>
@@ -374,7 +373,29 @@ export const SessionListItemComponent = ({
 					</div>
 					<div className="sessionsListItem__row">
 						<div className="sessionsListItem__icon sessionsListItem__icon--groupChat">
-							<GroupChatAvatarIcon />
+							<div className="sessionsListItem__stackedAvatars">
+								<div className="sessionsListItem__avatarWrapper">
+									<UserAvatar
+										username={activeSession.consultant?.username || 'C'}
+										displayName={activeSession.consultant?.displayName || activeSession.consultant?.username || 'C'}
+										userId={activeSession.consultant?.id || activeSession.consultant?.username || 'user2'}
+										size="32px"
+									/>
+								</div>
+								<div className="sessionsListItem__avatarWrapper">
+									<UserAvatar
+										username={activeSession.user?.username || 'U'}
+										displayName={activeSession.user?.username || 'U'}
+										userId={activeSession.user?.username || 'user1'}
+										size="32px"
+									/>
+								</div>
+								<div className="sessionsListItem__avatarWrapper sessionsListItem__avatarWrapper--plus">
+									<div className="sessionsListItem__plusAvatar">
+										+3
+									</div>
+								</div>
+							</div>
 						</div>
 						<div
 							className={clsx(
