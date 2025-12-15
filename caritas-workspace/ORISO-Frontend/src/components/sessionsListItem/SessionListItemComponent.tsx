@@ -44,6 +44,7 @@ import { SessionListItemLastMessage } from './SessionListItemLastMessage';
 import { ALIAS_MESSAGE_TYPES } from '../../api/apiSendAliasMessage';
 import { useTranslation } from 'react-i18next';
 import { useAppConfig } from '../../hooks/useAppConfig';
+import { RocketChatUsersOfRoomContext } from '../../globalState/provider/RocketChatUsersOfRoomProvider';
 
 interface SessionListItemProps {
 	defaultLanguage: string;
@@ -75,6 +76,8 @@ export const SessionListItemComponent = ({
 	const { path: listPath } = useContext(SessionTypeContext);
 	const { isE2eeEnabled } = useContext(E2EEContext);
 	const { activeSession } = useContext(ActiveSessionContext);
+	// MATRIX MIGRATION: RocketChat users context may be null for Matrix rooms
+	const rcUsersContext = useContext(RocketChatUsersOfRoomContext);
 
 	// Is List Item active
 	const isChatActive =
@@ -92,6 +95,12 @@ export const SessionListItemComponent = ({
 			ALIAS_MESSAGE_TYPES.MASTER_KEY_LOST
 	);
 	const [plainTextLastMessage, setPlainTextLastMessage] = useState(null);
+
+	// Member count for group chats (used for "+N" avatar). For non-group chats this stays 0.
+	const memberCount = activeSession.isGroup
+		? rcUsersContext?.total || 0
+		: 0;
+	const additionalMembers = Math.max(0, memberCount - 2); // Subtract 2 for the visible avatars
 
 	const { autoSelectPostcode } =
 		consultingType?.registration ||
@@ -264,13 +273,13 @@ export const SessionListItemComponent = ({
 		messageDate: number, // seconds since epoch
 		createDate: string // ISO8601 string
 	) => {
-		const newestDate = Math.max(
-			messageDate * MILLISECONDS_PER_SECOND,
-			convertISO8601ToMSSinceEpoch(createDate)
-		);
+		// Prioritize messageDate (last message) over createDate
+		const dateToUse = messageDate && messageDate > 0
+			? messageDate * MILLISECONDS_PER_SECOND
+			: convertISO8601ToMSSinceEpoch(createDate);
 
 		const prettyDate = getPrettyDateFromMessageDate(
-			newestDate / MILLISECONDS_PER_SECOND
+			dateToUse / MILLISECONDS_PER_SECOND
 		);
 
 		return prettyDate.str ? translate(prettyDate.str) : prettyDate.date;
@@ -390,11 +399,13 @@ export const SessionListItemComponent = ({
 										size="32px"
 									/>
 								</div>
-								<div className="sessionsListItem__avatarWrapper sessionsListItem__avatarWrapper--plus">
-									<div className="sessionsListItem__plusAvatar">
-										+3
+								{additionalMembers > 0 && (
+									<div className="sessionsListItem__avatarWrapper sessionsListItem__avatarWrapper--plus">
+										<div className="sessionsListItem__plusAvatar">
+											+{additionalMembers}
+										</div>
 									</div>
-								</div>
+								)}
 							</div>
 						</div>
 						<div

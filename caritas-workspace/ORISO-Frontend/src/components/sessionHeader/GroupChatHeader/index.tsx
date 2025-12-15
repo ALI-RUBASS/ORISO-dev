@@ -18,12 +18,7 @@ import {
 } from '../../session/sessionHelpers';
 import { isMobile } from 'react-device-detect';
 import { mobileListView } from '../../app/navigationHandler';
-import {
-	BackIcon,
-	CameraOnIcon,
-	GroupChatInfoIcon,
-	GroupChatAvatarIcon
-} from '../../../resources/img/icons';
+import { BackIcon, CameraOnIcon, GroupChatInfoIcon } from '../../../resources/img/icons';
 import { ReactComponent as VideoCallIcon } from '../../../resources/img/illustrations/camera.svg';
 import { ReactComponent as CallOnIcon } from '../../../resources/img/icons/call-on.svg';
 import { SessionMenu } from '../../sessionMenu/SessionMenu';
@@ -39,6 +34,7 @@ import { useAppConfig } from '../../../hooks/useAppConfig';
 import { SessionItemInterface } from '../../../globalState/interfaces';
 import { matrixClientService } from '../../../services/matrixClientService';
 import { RoomMember } from 'matrix-js-sdk';
+import { UserAvatar } from '../../message/UserAvatar';
 
 interface GroupChatHeaderProps {
 	hasUserInitiatedStopOrLeaveRequest: React.MutableRefObject<boolean>;
@@ -336,7 +332,28 @@ export const GroupChatHeader = ({
 				<div className="sessionInfo__username sessionInfo__username--deactivate sessionInfo__username--groupChat">
 					<div className="sessionInfo__titleRow">
 						<div className="sessionInfo__groupIcon">
-							<GroupChatAvatarIcon />
+									<div className="sessionsListItem__stackedAvatars">
+										{matrixMembers.slice(0, 2).map((member, index) => (
+											<div
+												key={member.userId || index}
+												className="sessionsListItem__avatarWrapper"
+											>
+												<UserAvatar
+													username={member.userId}
+													displayName={member.name || member.userId}
+													userId={member.userId}
+													size="32px"
+												/>
+											</div>
+										))}
+										{matrixMembers.length > 2 && (
+											<div className="sessionsListItem__avatarWrapper sessionsListItem__avatarWrapper--plus">
+												<div className="sessionsListItem__plusAvatar">
+													+{matrixMembers.length - 2}
+												</div>
+											</div>
+										)}
+									</div>
 						</div>
 						<h3>{typeof activeSession.item.topic === 'string' ? activeSession.item.topic : activeSession.item.topic?.name || ''}</h3>
 					</div>
