@@ -34,40 +34,22 @@ $icon-size-small: 16px;
 	&--active {
 		transition: all 0.3s ease;
 
-		&:after {
-			content: '';
-			width: 40px;
-			height: 100%;
-			background: $session-list-item-background-active;
-			display: block;
-			position: absolute;
-			bottom: 0;
-			top: 0;
-			animation: afterSessionsListItemWidth 200ms ease forwards;
-		}
-
-		@keyframes afterSessionsListItemWidth {
-			0% {
-				left: calc(100% - 80px);
-				opacity: 0;
-			}
-
-			100% {
-				left: calc(100% - 40px);
-				opacity: 1;
-			}
-		}
-
 		.sessionsListItem__content {
-			@include breakpoint($fromLarge) {
-				background-color: $session-list-item-background-active;
-				transition: all 0.3s ease;
-			}
+			background-color: #fff5f5 !important; // Light red background for active card
+			border: 2px solid #ff9999 !important; // Thicker darker red border for active card
+			transition: all 0.3s ease;
 
 			&:focus-visible {
 				outline: $focus-outline;
 				border-radius: 4px;
 				transition: all 0.6s ease;
+			}
+
+			&:hover,
+			&:focus,
+			&:active {
+				background-color: #fff5f5 !important; // Keep light red background on hover for active card
+				border: 2px solid #ff9999 !important; // Keep thicker border on hover for active card
 			}
 		}
 	}
@@ -76,38 +58,14 @@ $icon-size-small: 16px;
 		cursor: pointer;
 	}
 
-	&--groupChat {
-		.sessionsListItem__content {
-			background-color: #fff5f5; // Very light red background for group chats
-			border: 1px solid #ffcccc; // Thin red border for group chats
-		}
-
-		&--active {
-			.sessionsListItem__content {
-				@include breakpoint($fromLarge) {
-					background-color: #ffe5e5; // Slightly darker light red when active
-					border-color: #ff9999; // Slightly darker red border when active
-				}
-			}
-		}
-
-		&:hover {
-			.sessionsListItem__content {
-				@include breakpoint($fromLarge) {
-					background-color: #ffe5e5; // Slightly darker light red on hover
-					border-color: #ff9999; // Slightly darker red border on hover
-				}
-			}
-		}
-	}
-
 	&__content {
 		overflow: auto;
 		width: 100%;
 		padding: $grid-base-two;
 		margin: 0 $grid-base-two;
 		background-color: $white;
-		border-radius: $session-list-item-border-radius;
+		border: 1px solid #ffcccc; // Light red border for all cards
+		border-radius: 8px; // Increased border-radius for all cards
 		transition: all 0.6s ease;
 		position: relative;
 		z-index: 10;
@@ -158,9 +116,21 @@ $icon-size-small: 16px;
 		}
 	}
 
+	&__rowLeft {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		flex: 1;
+	}
+
+	&__rowRight {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		flex-shrink: 0;
+	}
+
 	&__consultingType {
-		flex-grow: 1;
-		padding-right: $grid-base;
 		display: block;
 		white-space: nowrap;
 		overflow: hidden;
@@ -172,8 +142,27 @@ $icon-size-small: 16px;
 		font-size: $font-size-secondary;
 		line-height: 16px;
 		white-space: nowrap;
-		text-align: right;
 		align-self: flex-end;
+	}
+
+	&__menuIcon {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		cursor: pointer;
+		width: 24px;
+		height: 24px;
+		flex-shrink: 0;
+
+		svg {
+			width: 16px;
+			height: 16px;
+			fill: var(--skin-color-secondary-contrast-safe, $secondary);
+		}
+
+		&:hover {
+			opacity: 0.7;
+		}
 	}
 
 	&__topic {
@@ -182,7 +171,7 @@ $icon-size-small: 16px;
 		padding-right: 8px;
 		text-align: center;
 		color: #fff;
-		background-color: var(--skin-color-primary, #cc1e1c);
+		background-color: var(--skin-color-primary, #646D78);
 		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;

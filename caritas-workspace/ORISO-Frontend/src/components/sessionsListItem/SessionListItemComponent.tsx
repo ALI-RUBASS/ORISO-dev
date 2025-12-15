@@ -9,7 +9,7 @@ import {
 } from '../../utils/dateHelpers';
 import { UserAvatar } from '../message/UserAvatar';
 import { ConsultantSearchLoader } from '../sessionHeader/ConsultantSearchLoader';
-import { GroupChatAvatarIcon } from '../../resources/img/icons';
+import { GroupChatAvatarIcon, MenuVerticalIcon } from '../../resources/img/icons';
 import oneOnOneImage from '../../resources/img/illustrations/one-on-one.svg';
 import teamImage from '../../resources/img/illustrations/Team.svg';
 import { SESSION_LIST_TAB } from '../session/sessionHelpers';
@@ -347,9 +347,30 @@ export const SessionListItemComponent = ({
 					role="tab"
 				>
 					<div className="sessionsListItem__row">
-					<div className="sessionsListItem__consultingType">
-						{topic?.name || ''}
-					</div>
+						<div className="sessionsListItem__rowLeft">
+							{topic?.name && (
+								<div
+									className="sessionsListItem__topic"
+									style={{
+										backgroundColor:
+											tenantData?.theming?.primaryColor
+									}}
+								>
+									{topic.name}
+								</div>
+							)}
+						</div>
+						<div className="sessionsListItem__rowRight">
+							<div className="sessionsListItem__date">
+								{prettyPrintDate(
+									activeSession.item.messageDate,
+									activeSession.item.createDate
+								)}
+							</div>
+							<div className="sessionsListItem__menuIcon">
+								<MenuVerticalIcon />
+							</div>
+						</div>
 					</div>
 					<div className="sessionsListItem__row">
 						<div className="sessionsListItem__icon sessionsListItem__icon--groupChat">
@@ -426,27 +447,34 @@ export const SessionListItemComponent = ({
 				role="tab"
 			>
 				<div className="sessionsListItem__row">
-					<div className="sessionsListItem__consultingType">
-						{!isAsker && !autoSelectPostcode
-							? activeSession.item.postcode
-							: null}
-					</div>
-					{topic?.name && (
-						<div
-							className="sessionsListItem__topic"
-							style={{
-								backgroundColor:
-									tenantData?.theming?.primaryColor
-							}}
-						>
-							{topic.name}
-						</div>
-					)}
-					<div className="sessionsListItem__date">
-						{prettyPrintDate(
-							activeSession.item.messageDate,
-							activeSession.item.createDate
+					<div className="sessionsListItem__rowLeft">
+						{topic?.name && (
+							<div
+								className="sessionsListItem__topic"
+								style={{
+									backgroundColor:
+										tenantData?.theming?.primaryColor
+								}}
+							>
+								{topic.name}
+							</div>
 						)}
+						<div className="sessionsListItem__consultingType">
+							{!isAsker && !autoSelectPostcode
+								? activeSession.item.postcode
+								: null}
+						</div>
+					</div>
+					<div className="sessionsListItem__rowRight">
+						<div className="sessionsListItem__date">
+							{prettyPrintDate(
+								activeSession.item.messageDate,
+								activeSession.item.createDate
+							)}
+						</div>
+						<div className="sessionsListItem__menuIcon">
+							<MenuVerticalIcon />
+						</div>
 					</div>
 				</div>
 				<div className="sessionsListItem__row">
