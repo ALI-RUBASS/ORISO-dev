@@ -10,9 +10,19 @@ import {
 import { UserAvatar } from '../message/UserAvatar';
 import { ConsultantSearchLoader } from '../sessionHeader/ConsultantSearchLoader';
 import { MenuVerticalIcon } from '../../resources/img/icons';
+import { ReactComponent as ArchiveIcon } from '../../resources/img/icons/inbox.svg';
+import { ReactComponent as TrashIcon } from '../../resources/img/icons/trash.svg';
+import { ReactComponent as BellOffIcon } from '../../resources/img/icons/audio-off.svg';
+import { ReactComponent as HelpIcon } from '../../resources/img/icons/i.svg';
+import { ReactComponent as PlusIcon } from '../../resources/img/icons/plus.svg';
+import { ReactComponent as PackageIcon } from '../../resources/img/icons/documents.svg';
 import oneOnOneImage from '../../resources/img/illustrations/one-on-one.svg';
 import teamImage from '../../resources/img/illustrations/Team.svg';
-import { SESSION_LIST_TAB } from '../session/sessionHelpers';
+import {
+	SESSION_LIST_TAB,
+	SESSION_LIST_TAB_ARCHIVE,
+	SESSION_LIST_TYPES
+} from '../session/sessionHelpers';
 import {
 	AUTHORITIES,
 	E2EEContext,
@@ -22,7 +32,9 @@ import {
 	UserDataContext,
 	useTenant,
 	ActiveSessionContext,
-	useTopic
+	useTopic,
+	SessionsDataContext,
+	REMOVE_SESSIONS
 } from '../../globalState';
 import { TopicSessionInterface } from '../../globalState/interfaces';
 import { getGroupChatDate } from '../session/sessionDateHelpers';
@@ -46,6 +58,11 @@ import { useTranslation } from 'react-i18next';
 import { useAppConfig } from '../../hooks/useAppConfig';
 import { RocketChatUsersOfRoomContext } from '../../globalState/provider/RocketChatUsersOfRoomProvider';
 import { RoomMember } from 'matrix-js-sdk';
+import { apiPutArchive, apiPutDearchive } from '../../api';
+import DeleteSession from '../session/DeleteSession';
+import { Overlay, OVERLAY_FUNCTIONS } from '../overlay/Overlay';
+import { archiveSessionSuccessOverlayItem } from '../sessionMenu/sessionMenuHelpers';
+import { mobileListView } from '../app/navigationHandler';
 interface SessionListItemProps {
 	defaultLanguage: string;
 	itemRef?: any;
@@ -74,11 +91,18 @@ export const SessionListItemComponent = ({
 	const getSessionListTab = () =>
 		`${sessionListTab ? `?sessionListTab=${sessionListTab}` : ''}`;
 	const { userData } = useContext(UserDataContext);
-	const { path: listPath } = useContext(SessionTypeContext);
+	const { path: listPath, type } = useContext(SessionTypeContext);
 	const { isE2eeEnabled } = useContext(E2EEContext);
-	const { activeSession } = useContext(ActiveSessionContext);
+	const { activeSession, reloadActiveSession } = useContext(ActiveSessionContext);
+	const { dispatch: sessionsDispatch } = useContext(SessionsDataContext);
 	// MATRIX MIGRATION: RocketChat users context may be null for Matrix rooms
 	const rcUsersContext = useContext(RocketChatUsersOfRoomContext);
+
+	// Dropdown menu state
+	const [flyoutOpen, setFlyoutOpen] = useState(false);
+	const [overlayItem, setOverlayItem] = useState(null);
+	const [overlayActive, setOverlayActive] = useState(false);
+	const [isRequestInProgress, setIsRequestInProgress] = useState(false);
 
 	// Is List Item active
 	const isChatActive =
@@ -173,6 +197,23 @@ export const SessionListItemComponent = ({
 
 	const isAsker = hasUserAuthority(AUTHORITIES.ASKER_DEFAULT, userData);
 
+	// Close dropdown when clicking outside
+	useEffect(() => {
+		const handleClickOutside = (e: MouseEvent) => {
+			if (flyoutOpen) {
+				const target = e.target as HTMLElement;
+				if (!target.closest('.sessionsListItem__menuIcon') && 
+					!target.closest('.sessionsListItem__dropdown')) {
+					setFlyoutOpen(false);
+				}
+			}
+		};
+		document.addEventListener('mousedown', handleClickOutside);
+		return () => {
+			document.removeEventListener('mousedown', handleClickOutside);
+		};
+	}, [flyoutOpen]);
+
 	if (!activeSession) {
 		return null;
 	}
@@ -249,6 +290,79 @@ export const SessionListItemComponent = ({
 		if (e.key === 'Enter' || e.key === ' ') {
 			handleOnClick();
 		}
+	};
+
+	// Dropdown menu handlers
+	const handleMenuClick = (e: React.MouseEvent) => {
+		e.stopPropagation(); // Prevent card click
+		setFlyoutOpen(!flyoutOpen);
+	};
+
+	const handleArchiveSession = () => {
+		setFlyoutOpen(false);
+		setOverlayItem(archiveSessionSuccessOverlayItem);
+		setOverlayActive(true);
+	};
+
+	const handleDearchiveSession = () => {
+		setFlyoutOpen(false);
+		apiPutDearchive(activeSession.item.id)
+			.then(() => {
+				reloadActiveSession();
+				setTimeout(() => {
+					if (window.innerWidth >= 900) {
+						history.push(
+							`${listPath}/${activeSession.item.groupId}/${activeSession.item.id}${getSessionListTab()}`
+						);
+					} else {
+						mobileListView();
+						history.push(listPath);
+					}
+				}, 1000);
+			})
+			.catch((error) => {
+				console.error(error);
+			});
+	};
+
+	const handleOverlayAction = (buttonFunction: string) => {
+		if (isRequestInProgress) {
+			return null;
+		}
+		setIsRequestInProgress(true);
+		if (buttonFunction === OVERLAY_FUNCTIONS.CLOSE) {
+			setOverlayActive(false);
+			setOverlayItem(null);
+			setIsRequestInProgress(false);
+		} else if (buttonFunction === OVERLAY_FUNCTIONS.ARCHIVE) {
+			const sessionId = activeSession.item.id;
+			const sessionGroupId = activeSession.item.groupId;
+			
+			apiPutArchive(sessionId)
+				.then(() => {
+					sessionsDispatch({
+						type: REMOVE_SESSIONS,
+						ids: sessionGroupId ? [sessionGroupId] : [sessionId]
+					});
+					
+					mobileListView();
+					history.push(listPath);
+				})
+				.catch((error) => {
+					console.error(error);
+				})
+				.finally(() => {
+					setOverlayActive(false);
+					setOverlayItem(null);
+					setIsRequestInProgress(false);
+					setFlyoutOpen(false);
+				});
+		}
+	};
+
+	const onSuccessDeleteSession = () => {
+		mobileListView();
+		history.push(listPath);
 	};
 
 	const iconVariant = () => {
@@ -379,9 +493,181 @@ export const SessionListItemComponent = ({
 							)}
 						</div>
 						<div className="sessionsListItem__rowRight">
-							<div className="sessionsListItem__menuIcon">
-								<MenuVerticalIcon />
-							</div>
+							{!activeSession.isGroup && (
+								<div 
+									className="sessionsListItem__menuIcon"
+									onClick={handleMenuClick}
+								>
+									<MenuVerticalIcon />
+								</div>
+							)}
+							{flyoutOpen && (
+								<div className="sessionsListItem__dropdown">
+									<div className="sessionsListItem__dropdownHeader">
+										<p className="sessionsListItem__dropdownSubtitle">
+											Jeder Raum individuell anpassbar
+										</p>
+										<h1 className="sessionsListItem__dropdownTitle">
+											Chatraum Einstellungen
+										</h1>
+									</div>
+									<div className="sessionsListItem__dropdownDivider" />
+									<div className="sessionsListItem__dropdownContent">
+										{!hasUserAuthority(AUTHORITIES.ASKER_DEFAULT, userData) &&
+											type !== SESSION_LIST_TYPES.ENQUIRY &&
+											activeSession.isSession && (
+												<>
+													{sessionListTab !== SESSION_LIST_TAB_ARCHIVE ? (
+														<button
+															onClick={handleArchiveSession}
+															className="sessionsListItem__dropdownOption"
+															type="button"
+														>
+															<ArchiveIcon className="sessionsListItem__dropdownOptionIcon" />
+															<div className="sessionsListItem__dropdownOptionCenter">
+																<div className="sessionsListItem__dropdownOptionTitleRow">
+																	<span className="sessionsListItem__dropdownOptionTitle">
+																		{translate('chatFlyout.archive') || 'Archiviere Chat'}
+																	</span>
+																	<kbd className="sessionsListItem__dropdownOptionShortcut">⇧A</kbd>
+																</div>
+																<p className="sessionsListItem__dropdownOptionDescription">
+																	{translate('chatFlyout.archive.description') || 'Archivierte Benachrichtigungen sind inaktiv. Der Chat wird in 12 Monaten gelöscht.'}
+																</p>
+															</div>
+														</button>
+													) : (
+														<button
+															onClick={handleDearchiveSession}
+															className="sessionsListItem__dropdownOption"
+															type="button"
+														>
+															<ArchiveIcon className="sessionsListItem__dropdownOptionIcon" />
+															<div className="sessionsListItem__dropdownOptionCenter">
+																<div className="sessionsListItem__dropdownOptionTitleRow">
+																	<span className="sessionsListItem__dropdownOptionTitle">
+																		{translate('chatFlyout.dearchive') || 'Dearchivieren'}
+																	</span>
+																	<kbd className="sessionsListItem__dropdownOptionShortcut">⇧A</kbd>
+																</div>
+																<p className="sessionsListItem__dropdownOptionDescription">
+																	{translate('chatFlyout.dearchive.description') || 'Chat aus dem Archiv wiederherstellen.'}
+																</p>
+															</div>
+														</button>
+													)}
+												</>
+											)}
+										<button
+											className="sessionsListItem__dropdownOption sessionsListItem__dropdownOption--disabled"
+											type="button"
+											disabled
+										>
+											<BellOffIcon className="sessionsListItem__dropdownOptionIcon sessionsListItem__dropdownOptionIcon--disabled" />
+											<div className="sessionsListItem__dropdownOptionCenter">
+												<div className="sessionsListItem__dropdownOptionTitleRow">
+													<span className="sessionsListItem__dropdownOptionTitle sessionsListItem__dropdownOptionTitle--disabled">
+														Stummschalten
+													</span>
+													<kbd className="sessionsListItem__dropdownOptionShortcut">⇧Ö</kbd>
+												</div>
+												<p className="sessionsListItem__dropdownOptionDescription sessionsListItem__dropdownOptionDescription--disabled">
+													Deaktiviere Benachrichtigungen für diesen Chat.
+												</p>
+											</div>
+										</button>
+										<button
+											className="sessionsListItem__dropdownOption sessionsListItem__dropdownOption--disabled"
+											type="button"
+											disabled
+										>
+											<HelpIcon className="sessionsListItem__dropdownOptionIcon sessionsListItem__dropdownOptionIcon--disabled" />
+											<div className="sessionsListItem__dropdownOptionCenter">
+												<div className="sessionsListItem__dropdownOptionTitleRow">
+													<span className="sessionsListItem__dropdownOptionTitle sessionsListItem__dropdownOptionTitle--disabled">
+														Hilfe Anfragen
+													</span>
+													<kbd className="sessionsListItem__dropdownOptionShortcut">⇧Ä</kbd>
+												</div>
+												<p className="sessionsListItem__dropdownOptionDescription sessionsListItem__dropdownOptionDescription--disabled">
+													Eskaliere den Fall intern oder extern ohne den Datenschutz zu vernachlässigen.
+												</p>
+											</div>
+										</button>
+									</div>
+									<div className="sessionsListItem__dropdownDivider" />
+									<div className="sessionsListItem__dropdownContent">
+										<button
+											className="sessionsListItem__dropdownOption sessionsListItem__dropdownOption--disabled"
+											type="button"
+											disabled
+										>
+											<PlusIcon className="sessionsListItem__dropdownOptionIcon sessionsListItem__dropdownOptionIcon--disabled" />
+											<div className="sessionsListItem__dropdownOptionCenter">
+												<div className="sessionsListItem__dropdownOptionTitleRow">
+													<span className="sessionsListItem__dropdownOptionTitle sessionsListItem__dropdownOptionTitle--disabled">
+														Weitere Personen einladen
+													</span>
+													<kbd className="sessionsListItem__dropdownOptionShortcut">⇧I</kbd>
+												</div>
+												<p className="sessionsListItem__dropdownOptionDescription sessionsListItem__dropdownOptionDescription--disabled">
+													Wer eingeladen werden kann, hängt von den Admin-Einstellungen ab.
+												</p>
+											</div>
+										</button>
+										<button
+											className="sessionsListItem__dropdownOption sessionsListItem__dropdownOption--disabled"
+											type="button"
+											disabled
+										>
+											<PackageIcon className="sessionsListItem__dropdownOptionIcon sessionsListItem__dropdownOptionIcon--disabled" />
+											<div className="sessionsListItem__dropdownOptionCenter">
+												<div className="sessionsListItem__dropdownOptionTitleRow">
+													<span className="sessionsListItem__dropdownOptionTitle sessionsListItem__dropdownOptionTitle--disabled">
+														Chat Zusammenfassen
+													</span>
+													<kbd className="sessionsListItem__dropdownOptionShortcut">⇧Ü</kbd>
+												</div>
+												<p className="sessionsListItem__dropdownOptionDescription sessionsListItem__dropdownOptionDescription--disabled">
+													Spare Zeit, mit Hilfe unseres vollends Datenschutzkonformen KI Workflows.
+												</p>
+											</div>
+										</button>
+										{hasUserAuthority(AUTHORITIES.CONSULTANT_DEFAULT, userData) &&
+											type !== SESSION_LIST_TYPES.ENQUIRY &&
+											activeSession.isSession && (
+												<DeleteSession
+													chatId={activeSession.item.id}
+													onSuccess={onSuccessDeleteSession}
+												>
+													{(onClick) => (
+														<button
+															onClick={() => {
+																setFlyoutOpen(false);
+																onClick();
+															}}
+															className="sessionsListItem__dropdownOption"
+															type="button"
+														>
+															<TrashIcon className="sessionsListItem__dropdownOptionIcon" />
+															<div className="sessionsListItem__dropdownOptionCenter">
+																<div className="sessionsListItem__dropdownOptionTitleRow">
+																	<span className="sessionsListItem__dropdownOptionTitle">
+																		{translate('chatFlyout.remove') || 'Löschen'}
+																	</span>
+																	<kbd className="sessionsListItem__dropdownOptionShortcut">⇧D</kbd>
+																</div>
+																<p className="sessionsListItem__dropdownOptionDescription">
+																	{translate('chatFlyout.remove.description') || 'Chat dauerhaft löschen.'}
+																</p>
+															</div>
+														</button>
+													)}
+												</DeleteSession>
+											)}
+									</div>
+								</div>
+							)}
 						</div>
 					</div>
 					<div className="sessionsListItem__row">
@@ -505,9 +791,183 @@ export const SessionListItemComponent = ({
 								activeSession.item.createDate
 							)}
 						</div>
-						<div className="sessionsListItem__menuIcon">
-							<MenuVerticalIcon />
-						</div>
+						{!activeSession.isGroup && (
+							<>
+								<div 
+									className="sessionsListItem__menuIcon"
+									onClick={handleMenuClick}
+								>
+									<MenuVerticalIcon />
+								</div>
+								{flyoutOpen && (
+									<div className="sessionsListItem__dropdown">
+										<div className="sessionsListItem__dropdownHeader">
+											<p className="sessionsListItem__dropdownSubtitle">
+												Jeder Raum individuell anpassbar
+											</p>
+											<h1 className="sessionsListItem__dropdownTitle">
+												Chatraum Einstellungen
+											</h1>
+										</div>
+										<div className="sessionsListItem__dropdownDivider" />
+										<div className="sessionsListItem__dropdownContent">
+											{!hasUserAuthority(AUTHORITIES.ASKER_DEFAULT, userData) &&
+												type !== SESSION_LIST_TYPES.ENQUIRY &&
+												activeSession.isSession && (
+													<>
+														{sessionListTab !== SESSION_LIST_TAB_ARCHIVE ? (
+															<button
+																onClick={handleArchiveSession}
+																className="sessionsListItem__dropdownOption"
+																type="button"
+															>
+																<ArchiveIcon className="sessionsListItem__dropdownOptionIcon" />
+																<div className="sessionsListItem__dropdownOptionCenter">
+																	<div className="sessionsListItem__dropdownOptionTitleRow">
+																		<span className="sessionsListItem__dropdownOptionTitle">
+																			{translate('chatFlyout.archive') || 'Archiviere Chat'}
+																		</span>
+																		<kbd className="sessionsListItem__dropdownOptionShortcut">⇧A</kbd>
+																	</div>
+																	<p className="sessionsListItem__dropdownOptionDescription">
+																		{translate('chatFlyout.archive.description') || 'Archivierte Benachrichtigungen sind inaktiv. Der Chat wird in 12 Monaten gelöscht.'}
+																	</p>
+																</div>
+															</button>
+														) : (
+															<button
+																onClick={handleDearchiveSession}
+																className="sessionsListItem__dropdownOption"
+																type="button"
+															>
+																<ArchiveIcon className="sessionsListItem__dropdownOptionIcon" />
+																<div className="sessionsListItem__dropdownOptionCenter">
+																	<div className="sessionsListItem__dropdownOptionTitleRow">
+																		<span className="sessionsListItem__dropdownOptionTitle">
+																			{translate('chatFlyout.dearchive') || 'Dearchivieren'}
+																		</span>
+																		<kbd className="sessionsListItem__dropdownOptionShortcut">⇧A</kbd>
+																	</div>
+																	<p className="sessionsListItem__dropdownOptionDescription">
+																		{translate('chatFlyout.dearchive.description') || 'Chat aus dem Archiv wiederherstellen.'}
+																	</p>
+																</div>
+															</button>
+														)}
+													</>
+												)}
+											<button
+												className="sessionsListItem__dropdownOption sessionsListItem__dropdownOption--disabled"
+												type="button"
+												disabled
+											>
+												<BellOffIcon className="sessionsListItem__dropdownOptionIcon sessionsListItem__dropdownOptionIcon--disabled" />
+												<div className="sessionsListItem__dropdownOptionCenter">
+													<div className="sessionsListItem__dropdownOptionTitleRow">
+														<span className="sessionsListItem__dropdownOptionTitle sessionsListItem__dropdownOptionTitle--disabled">
+															Stummschalten
+														</span>
+														<kbd className="sessionsListItem__dropdownOptionShortcut">⇧Ö</kbd>
+													</div>
+													<p className="sessionsListItem__dropdownOptionDescription sessionsListItem__dropdownOptionDescription--disabled">
+														Deaktiviere Benachrichtigungen für diesen Chat.
+													</p>
+												</div>
+											</button>
+											<button
+												className="sessionsListItem__dropdownOption sessionsListItem__dropdownOption--disabled"
+												type="button"
+												disabled
+											>
+												<HelpIcon className="sessionsListItem__dropdownOptionIcon sessionsListItem__dropdownOptionIcon--disabled" />
+												<div className="sessionsListItem__dropdownOptionCenter">
+													<div className="sessionsListItem__dropdownOptionTitleRow">
+														<span className="sessionsListItem__dropdownOptionTitle sessionsListItem__dropdownOptionTitle--disabled">
+															Hilfe Anfragen
+														</span>
+														<kbd className="sessionsListItem__dropdownOptionShortcut">⇧Ä</kbd>
+													</div>
+													<p className="sessionsListItem__dropdownOptionDescription sessionsListItem__dropdownOptionDescription--disabled">
+														Eskaliere den Fall intern oder extern ohne den Datenschutz zu vernachlässigen.
+													</p>
+												</div>
+											</button>
+										</div>
+										<div className="sessionsListItem__dropdownDivider" />
+										<div className="sessionsListItem__dropdownContent">
+											<button
+												className="sessionsListItem__dropdownOption sessionsListItem__dropdownOption--disabled"
+												type="button"
+												disabled
+											>
+												<PlusIcon className="sessionsListItem__dropdownOptionIcon sessionsListItem__dropdownOptionIcon--disabled" />
+												<div className="sessionsListItem__dropdownOptionCenter">
+													<div className="sessionsListItem__dropdownOptionTitleRow">
+														<span className="sessionsListItem__dropdownOptionTitle sessionsListItem__dropdownOptionTitle--disabled">
+															Weitere Personen einladen
+														</span>
+														<kbd className="sessionsListItem__dropdownOptionShortcut">⇧I</kbd>
+													</div>
+													<p className="sessionsListItem__dropdownOptionDescription sessionsListItem__dropdownOptionDescription--disabled">
+														Wer eingeladen werden kann, hängt von den Admin-Einstellungen ab.
+													</p>
+												</div>
+											</button>
+											<button
+												className="sessionsListItem__dropdownOption sessionsListItem__dropdownOption--disabled"
+												type="button"
+												disabled
+											>
+												<PackageIcon className="sessionsListItem__dropdownOptionIcon sessionsListItem__dropdownOptionIcon--disabled" />
+												<div className="sessionsListItem__dropdownOptionCenter">
+													<div className="sessionsListItem__dropdownOptionTitleRow">
+														<span className="sessionsListItem__dropdownOptionTitle sessionsListItem__dropdownOptionTitle--disabled">
+															Chat Zusammenfassen
+														</span>
+														<kbd className="sessionsListItem__dropdownOptionShortcut">⇧Ü</kbd>
+													</div>
+													<p className="sessionsListItem__dropdownOptionDescription sessionsListItem__dropdownOptionDescription--disabled">
+														Spare Zeit, mit Hilfe unseres vollends Datenschutzkonformen KI Workflows.
+													</p>
+												</div>
+											</button>
+											{hasUserAuthority(AUTHORITIES.CONSULTANT_DEFAULT, userData) &&
+												type !== SESSION_LIST_TYPES.ENQUIRY &&
+												activeSession.isSession && (
+													<DeleteSession
+														chatId={activeSession.item.id}
+														onSuccess={onSuccessDeleteSession}
+													>
+														{(onClick) => (
+															<button
+																onClick={() => {
+																	setFlyoutOpen(false);
+																	onClick();
+																}}
+																className="sessionsListItem__dropdownOption"
+																type="button"
+															>
+																<TrashIcon className="sessionsListItem__dropdownOptionIcon" />
+																<div className="sessionsListItem__dropdownOptionCenter">
+																	<div className="sessionsListItem__dropdownOptionTitleRow">
+																		<span className="sessionsListItem__dropdownOptionTitle">
+																			{translate('chatFlyout.remove') || 'Löschen'}
+																		</span>
+																		<kbd className="sessionsListItem__dropdownOptionShortcut">⇧D</kbd>
+																	</div>
+																	<p className="sessionsListItem__dropdownOptionDescription">
+																		{translate('chatFlyout.remove.description') || 'Chat dauerhaft löschen.'}
+																	</p>
+																</div>
+															</button>
+														)}
+													</DeleteSession>
+												)}
+										</div>
+									</div>
+								)}
+							</>
+						)}
 					</div>
 				</div>
 				<div className="sessionsListItem__row">
@@ -571,6 +1031,12 @@ export const SessionListItemComponent = ({
 					</div>
 				</div>
 			</div>
+			{overlayActive && overlayItem && (
+				<Overlay
+					item={overlayItem}
+					handleOverlay={handleOverlayAction}
+				/>
+			)}
 		</div>
 	);
 };
