@@ -58,30 +58,24 @@ $tabBarHeightDesktop: 53px;
 		height: $iconWrapperSize;
 		border-radius: $grid-base-three;
 		cursor: pointer;
-		background-color: $white;
-		transition: background-color 0.6s ease;
+		background: transparent;
+		border: none;
+		padding: 0;
 		overflow: hidden;
 		display: block;
-		text-align: center;
-		box-shadow: 0 3px 0 0 rgba(0, 0, 0, 0.1);
-		line-height: $iconWrapperSize;
 
-		svg {
-			width: $iconSize;
-			height: $iconSize;
-
-			* {
-				transition: fill 0.6s ease;
-				fill: var(--skin-color-secondary-contrast-safe, $secondary);
-			}
+		&Image {
+			width: 48px;
+			height: 45px;
+			display: block;
 		}
 
-		&:hover {
-			background-color: var(--skin-color-primary, $primary);
+		&:hover:not(&--active) .sessionsList__createChatButtonImage {
+			content: url('../../resources/img/illustrations/hover-createGroup.svg');
+		}
 
-			svg * {
-				fill: $white;
-			}
+		&--active .sessionsList__createChatButtonImage {
+			content: url('../../resources/img/illustrations/active-createGroup.svg');
 		}
 	}
 

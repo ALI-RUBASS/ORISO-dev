@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { useContext, useState, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { ResizableHandle } from './ResizableHandle';
 import {
 	SESSION_LIST_TAB,
@@ -15,6 +15,9 @@ import {
 } from '../../globalState';
 import { SessionsList } from './SessionsList';
 import { ReactComponent as CreateGroupChatIcon } from '../../resources/img/icons/speech-bubble-plus.svg';
+import defaultCreateGroup from '../../resources/img/illustrations/default-createGroup.svg';
+import hoverCreateGroup from '../../resources/img/illustrations/hover-createGroup.svg';
+import activeCreateGroup from '../../resources/img/illustrations/active-createGroup.svg';
 import './sessionsList.styles';
 import { LanguagesContext } from '../../globalState/provider/LanguagesProvider';
 import { useSearchParam } from '../../hooks/useSearchParams';
@@ -32,6 +35,8 @@ export const SessionsListWrapper = ({
 	const { userData } = useContext(UserDataContext);
 	const { type } = useContext(SessionTypeContext);
 	const sessionListTab = useSearchParam<SESSION_LIST_TAB>('sessionListTab');
+	const location = useLocation();
+	const isCreateChatActive = location.pathname.includes('/createGroupChat');
 	
 	// Resizable sidebar width
 	const [sidebarWidth, setSidebarWidth] = useState<number>(() => {
@@ -113,14 +118,19 @@ export const SessionsListWrapper = ({
 					}`
 				}}
 			>
-				<span
-					className="sessionsList__createChatButton"
+				<button
+					type="button"
+					className={`sessionsList__createChatButton ${isCreateChatActive ? 'sessionsList__createChatButton--active' : ''}`}
 					title={translate(
 						'sessionList.createChat.buttonTitle'
 					)}
 				>
-					<CreateGroupChatIcon />
-				</span>
+					<img
+						src={isCreateChatActive ? activeCreateGroup : defaultCreateGroup}
+						alt={translate('sessionList.createChat.buttonTitle')}
+						className="sessionsList__createChatButtonImage"
+					/>
+				</button>
 			</Link>
 		) : (
 			<div className="sessionMenuPlaceholder"></div>

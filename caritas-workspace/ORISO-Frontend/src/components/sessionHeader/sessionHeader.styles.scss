@@ -88,6 +88,34 @@ $iconSize: 24px;
 		}
 	}
 
+	// Mobile-specific back button styling with custom assets
+	&__feedbackBackButton,
+	&__backButton {
+		@media screen and (max-width: 899px) {
+			width: $backBtnSize;
+			height: $backBtnSize;
+			background-image: url('../../resources/img/illustrations/default-back.svg');
+			background-size: contain;
+			background-repeat: no-repeat;
+			background-position: center;
+
+			// Hide original SVG icon so only the custom asset is visible
+			svg {
+				opacity: 0;
+				width: 100%;
+				height: 100%;
+			}
+
+			&:hover {
+				background-image: url('../../resources/img/illustrations/hover-back.svg');
+			}
+
+			&:active {
+				background-image: url('../../resources/img/illustrations/clicked-back.png');
+			}
+		}
+	}
+
 	&__username {
 		cursor: pointer;
 		overflow: hidden;
