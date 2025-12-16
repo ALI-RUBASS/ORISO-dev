@@ -605,6 +605,7 @@
 				"subscriber": "Teilnehmende"
 			}
 		},
+		"noTopicSpecified": "kein Thema gewählt",
 		"cancel": {
 			"button": {
 				"label": "Abbrechen"

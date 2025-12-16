@@ -593,6 +593,7 @@
 				"subscriber": "Participants"
 			}
 		},
+		"noTopicSpecified": "No topic specified",
 		"cancel": {
 			"button": {
 				"label": "Cancel"

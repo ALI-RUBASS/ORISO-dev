@@ -36,7 +36,7 @@ $icon-size-small: 16px;
 
 		.sessionsListItem__content {
 			background-color: #fff5f5 !important; // Light red background for active card
-			border: 2px solid #ff9999 !important; // Thicker darker red border for active card
+			border: 2px solid #da5248 !important; // Dark red border for active card
 			transition: all 0.3s ease;
 
 			&:focus-visible {
@@ -49,7 +49,22 @@ $icon-size-small: 16px;
 			&:focus,
 			&:active {
 				background-color: #fff5f5 !important; // Keep light red background on hover for active card
-				border: 2px solid #ff9999 !important; // Keep thicker border on hover for active card
+				border: 2px solid #da5248 !important; // Keep dark red border on hover for active card
+			}
+		}
+
+		// Make tags red when card is active
+		.sessionsListItem__topic {
+			background-color: #da5248 !important;
+		}
+
+		// Make consulting type icons red when card is active
+		.sessionsListItem__consultingTypeIcon {
+			svg,
+			img {
+				// Filter to convert black to #da5248 (red)
+				// Using filter to change SVG color from black to red
+				filter: brightness(0) saturate(100%) invert(26%) sepia(92%) saturate(2000%) hue-rotate(340deg) brightness(0.9) contrast(0.95);
 			}
 		}
 	}

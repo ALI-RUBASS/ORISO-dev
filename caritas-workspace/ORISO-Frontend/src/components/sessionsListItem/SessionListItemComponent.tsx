@@ -374,7 +374,7 @@ export const SessionListItemComponent = ({
 											tenantData?.theming?.primaryColor
 									}}
 								>
-									Consultants
+									{translate('groupChat.noTopicSpecified')}
 								</div>
 							)}
 						</div>
