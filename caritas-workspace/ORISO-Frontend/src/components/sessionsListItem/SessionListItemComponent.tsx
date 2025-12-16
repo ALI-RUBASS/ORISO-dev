@@ -370,7 +370,8 @@ export const SessionListItemComponent = ({
 								<div
 									className="sessionsListItem__topic"
 									style={{
-										backgroundColor:'#cc1e1c'
+										backgroundColor:
+											tenantData?.theming?.primaryColor
 									}}
 								>
 									Consultants
@@ -378,12 +379,6 @@ export const SessionListItemComponent = ({
 							)}
 						</div>
 						<div className="sessionsListItem__rowRight">
-							<div className="sessionsListItem__date">
-								{prettyPrintDate(
-									activeSession.item.messageDate,
-									activeSession.item.createDate
-								)}
-							</div>
 							<div className="sessionsListItem__menuIcon">
 								<MenuVerticalIcon />
 							</div>

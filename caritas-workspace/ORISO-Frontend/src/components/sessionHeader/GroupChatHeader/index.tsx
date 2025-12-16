@@ -332,28 +332,27 @@ export const GroupChatHeader = ({
 				<div className="sessionInfo__username sessionInfo__username--deactivate sessionInfo__username--groupChat">
 					<div className="sessionInfo__titleRow">
 						<div className="sessionInfo__groupIcon">
-									<div className="sessionsListItem__stackedAvatars">
-										{matrixMembers.slice(0, 2).map((member, index) => (
-											<div
-												key={member.userId || index}
-												className="sessionsListItem__avatarWrapper"
-											>
-												<UserAvatar
-													username={member.userId}
-													displayName={member.name || member.userId}
-													userId={member.userId}
-													size="32px"
-												/>
-											</div>
-										))}
-										{matrixMembers.length > 2 && (
-											<div className="sessionsListItem__avatarWrapper sessionsListItem__avatarWrapper--plus">
-												<div className="sessionsListItem__plusAvatar">
-													+{matrixMembers.length - 2}
-												</div>
-											</div>
-										)}
-									</div>
+						<div className="sessionsListItem__stackedAvatars">
+	{/* Always render 2 avatar placeholders */}
+	{[0, 1].map((_, index) => (
+		<div
+			key={index}
+			className="sessionsListItem__avatarWrapper"
+		>
+			<UserAvatar
+				username={`placeholder-${index}`}
+				displayName="User"
+				userId={`placeholder-${index}`}
+				size="32px"
+			/>
+		</div>
+	))}
+
+	{/* Optional third circle */}
+	<div className="sessionsListItem__avatarWrapper sessionsListItem__avatarWrapper--plus">
+		<div className="sessionsListItem__plusAvatar">+1</div>
+	</div>
+</div>
 						</div>
 						<h3>{typeof activeSession.item.topic === 'string' ? activeSession.item.topic : activeSession.item.topic?.name || ''}</h3>
 					</div>

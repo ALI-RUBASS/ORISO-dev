@@ -61,9 +61,9 @@ $icon-size-small: 16px;
 	&__content {
 		overflow: auto;
 		width: 100%;
-		padding-left: 12px;
+		padding-left: 20px;
 		padding-right: 6px;
-		padding-top: 6px;
+		padding-top: 12px;
 		margin: 0 $grid-base-two;
 		background-color: $white;
 		border: 1px solid #ffcccc; // Light red border for all cards
