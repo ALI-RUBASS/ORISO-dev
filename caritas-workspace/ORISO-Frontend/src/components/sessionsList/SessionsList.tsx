@@ -662,8 +662,21 @@ export const SessionsList = ({
 
 	const filterSessions = useCallback(
 		(session) => {
-			// do not filter chats
+			// Filter group chats: show if consultant is owner OR participant (subscribed)
 			if (session?.chat) {
+				// For MY_SESSION type, filter group chats by participation
+				if (type === SESSION_LIST_TYPES.MY_SESSION && !hasUserAuthority(AUTHORITIES.ASKER_DEFAULT, userData)) {
+					// Check if consultant is the owner
+					const isOwner = session?.consultant?.id === userData.userId;
+					
+					// Check if consultant is subscribed (participant in the room)
+					// subscribed=true means the consultant is a member of the room
+					const isParticipant = session?.chat?.subscribed === true;
+					
+					// Show if owner OR participant
+					return isOwner || isParticipant;
+				}
+				// For other types or askers, show all chats
 				return true;
 				// If the user is marked for deletion we should hide the message from the list
 			} else if (session?.user?.deleted) {
