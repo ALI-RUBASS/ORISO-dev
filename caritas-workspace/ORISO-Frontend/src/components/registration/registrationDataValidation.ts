@@ -25,7 +25,9 @@ export const REGISTRATION_DATA_VALIDATION: RegistrationDataValidation = {
 	},
 	username: {
 		validation: (val) => {
-			return val.length > 4;
+			// Only allow lowercase letters, numbers, underscores and dashes
+			const usernameRegex = /^[a-z0-9_-]+$/;
+			return val.length > 4 && usernameRegex.test(val);
 		}
 	}
 };

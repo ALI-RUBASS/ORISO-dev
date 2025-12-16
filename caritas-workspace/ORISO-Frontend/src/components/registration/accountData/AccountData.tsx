@@ -105,7 +105,11 @@ export const AccountData: VFC<{
 					</InputAdornment>
 				}
 				onInputChange={(val: string) => {
-					setUsername(val);
+					// Only allow lowercase letters, numbers, underscores and dashes
+					const normalizedVal = val
+						.toLowerCase()
+						.replace(/[^a-z0-9_-]/g, '');
+					setUsername(normalizedVal);
 				}}
 				value={username}
 				label={t('registration.account.username.label')}
