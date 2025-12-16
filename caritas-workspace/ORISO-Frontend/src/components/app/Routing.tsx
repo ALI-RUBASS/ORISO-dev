@@ -21,6 +21,7 @@ import { useAppConfig } from '../../hooks/useAppConfig';
 import { useAskerHasAssignedConsultant } from '../../containers/bookings/hooks/useAskerHasAssignedConsultant';
 import { TermsAndConditions } from '../termsandconditions/TermsAndConditions';
 import { Loading } from './Loading';
+import NotFound from '../notFound/NotFound';
 
 interface RoutingProps {
 	logout?: Function;
@@ -353,6 +354,10 @@ export const Routing = (props: RoutingProps) => {
 						</div>
 					</NonPlainRoutesWrapper>
 				</E2EEProvider>
+			</Route>
+			{/* Temporary route for 404 page testing */}
+			<Route path="/404" exact>
+				<NotFound />
 			</Route>
 			<Redirect
 				from="*"
