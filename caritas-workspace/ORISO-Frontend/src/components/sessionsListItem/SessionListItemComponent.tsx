@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { useContext, useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useParams, useHistory } from 'react-router-dom';
 import { getSessionsListItemIcon, LIST_ICONS } from './sessionsListItemHelpers';
 import {
@@ -100,6 +101,9 @@ export const SessionListItemComponent = ({
 
 	// Dropdown menu state
 	const [flyoutOpen, setFlyoutOpen] = useState(false);
+	const menuIconRef = React.useRef<HTMLDivElement>(null);
+	const dropdownRef = React.useRef<HTMLDivElement>(null);
+	const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
 	const [overlayItem, setOverlayItem] = useState(null);
 	const [overlayActive, setOverlayActive] = useState(false);
 	const [isRequestInProgress, setIsRequestInProgress] = useState(false);
@@ -214,6 +218,29 @@ export const SessionListItemComponent = ({
 		};
 	}, [flyoutOpen]);
 
+	// Recalculate dropdown position when it's open and window resizes/scrolls
+	useEffect(() => {
+		if (flyoutOpen && menuIconRef.current) {
+			const updatePosition = () => {
+				if (menuIconRef.current) {
+					const rect = menuIconRef.current.getBoundingClientRect();
+					setDropdownPosition({
+						top: rect.bottom + 8,
+						left: rect.right - 280 // Position dropdown to the left of menu icon
+					});
+				}
+			};
+
+			window.addEventListener('scroll', updatePosition, true);
+			window.addEventListener('resize', updatePosition);
+
+			return () => {
+				window.removeEventListener('scroll', updatePosition, true);
+				window.removeEventListener('resize', updatePosition);
+			};
+		}
+	}, [flyoutOpen]);
+
 	if (!activeSession) {
 		return null;
 	}
@@ -295,7 +322,16 @@ export const SessionListItemComponent = ({
 	// Dropdown menu handlers
 	const handleMenuClick = (e: React.MouseEvent) => {
 		e.stopPropagation(); // Prevent card click
-		setFlyoutOpen(!flyoutOpen);
+		const newState = !flyoutOpen;
+		if (newState && menuIconRef.current) {
+			// Calculate position when opening - use getBoundingClientRect for viewport coordinates
+			const rect = menuIconRef.current.getBoundingClientRect();
+			setDropdownPosition({
+				top: rect.bottom + 8,
+				left: rect.right - 280 // Position dropdown to the left of menu icon (dropdown width is 280px)
+			});
+		}
+		setFlyoutOpen(newState);
 	};
 
 	const handleArchiveSession = () => {
@@ -794,19 +830,28 @@ export const SessionListItemComponent = ({
 						{!activeSession.isGroup && (
 							<>
 								<div 
+									ref={menuIconRef}
 									className="sessionsListItem__menuIcon"
 									onClick={handleMenuClick}
 								>
 									<MenuVerticalIcon />
 								</div>
-								{flyoutOpen && (
-									<div className="sessionsListItem__dropdown">
+								{flyoutOpen && createPortal(
+									<div 
+										className="sessionsListItem__dropdown"
+										style={{
+											top: dropdownPosition.top > 0 ? `${dropdownPosition.top}px` : '40px',
+											left: dropdownPosition.left > 0 ? `${dropdownPosition.left}px` : 'auto',
+											right: 'auto',
+											zIndex: 999999
+										}}
+									>
 										<div className="sessionsListItem__dropdownHeader">
 											<p className="sessionsListItem__dropdownSubtitle">
-												Jeder Raum individuell anpassbar
+												{translate('groupChat.info.settings.subtitle')}
 											</p>
 											<h1 className="sessionsListItem__dropdownTitle">
-												Chatraum Einstellungen
+												{translate('groupChat.info.settings.headline')}
 											</h1>
 										</div>
 										<div className="sessionsListItem__dropdownDivider" />
@@ -825,12 +870,12 @@ export const SessionListItemComponent = ({
 																<div className="sessionsListItem__dropdownOptionCenter">
 																	<div className="sessionsListItem__dropdownOptionTitleRow">
 																		<span className="sessionsListItem__dropdownOptionTitle">
-																			{translate('chatFlyout.archive') || 'Archiviere Chat'}
+																			{translate('chatFlyout.archive')}
 																		</span>
 																		<kbd className="sessionsListItem__dropdownOptionShortcut">⇧A</kbd>
 																	</div>
 																	<p className="sessionsListItem__dropdownOptionDescription">
-																		{translate('chatFlyout.archive.description') || 'Archivierte Benachrichtigungen sind inaktiv. Der Chat wird in 12 Monaten gelöscht.'}
+																		{translate('chatFlyout.archiveDescription')}
 																	</p>
 																</div>
 															</button>
@@ -844,17 +889,39 @@ export const SessionListItemComponent = ({
 																<div className="sessionsListItem__dropdownOptionCenter">
 																	<div className="sessionsListItem__dropdownOptionTitleRow">
 																		<span className="sessionsListItem__dropdownOptionTitle">
-																			{translate('chatFlyout.dearchive') || 'Dearchivieren'}
+																			{translate('chatFlyout.dearchive')}
 																		</span>
 																		<kbd className="sessionsListItem__dropdownOptionShortcut">⇧A</kbd>
 																	</div>
 																	<p className="sessionsListItem__dropdownOptionDescription">
-																		{translate('chatFlyout.dearchive.description') || 'Chat aus dem Archiv wiederherstellen.'}
+																		{translate('chatFlyout.dearchiveDescription')}
 																	</p>
 																</div>
 															</button>
 														)}
 													</>
+												)}
+											{hasUserAuthority(AUTHORITIES.CONSULTANT_DEFAULT, userData) &&
+												type !== SESSION_LIST_TYPES.ENQUIRY &&
+												activeSession.isSession && (
+													<button
+														className="sessionsListItem__dropdownOption sessionsListItem__dropdownOption--disabled"
+														type="button"
+														disabled
+													>
+														<TrashIcon className="sessionsListItem__dropdownOptionIcon sessionsListItem__dropdownOptionIcon--disabled" />
+														<div className="sessionsListItem__dropdownOptionCenter">
+															<div className="sessionsListItem__dropdownOptionTitleRow">
+																<span className="sessionsListItem__dropdownOptionTitle sessionsListItem__dropdownOptionTitle--disabled">
+																	{translate('chatFlyout.remove')}
+																</span>
+																<kbd className="sessionsListItem__dropdownOptionShortcut">⇧D</kbd>
+															</div>
+															<p className="sessionsListItem__dropdownOptionDescription sessionsListItem__dropdownOptionDescription--disabled">
+																{translate('chatFlyout.removeDescription')}
+															</p>
+														</div>
+													</button>
 												)}
 											<button
 												className="sessionsListItem__dropdownOption sessionsListItem__dropdownOption--disabled"
@@ -865,12 +932,12 @@ export const SessionListItemComponent = ({
 												<div className="sessionsListItem__dropdownOptionCenter">
 													<div className="sessionsListItem__dropdownOptionTitleRow">
 														<span className="sessionsListItem__dropdownOptionTitle sessionsListItem__dropdownOptionTitle--disabled">
-															Stummschalten
+															{translate('chatFlyout.mute')}
 														</span>
 														<kbd className="sessionsListItem__dropdownOptionShortcut">⇧Ö</kbd>
 													</div>
 													<p className="sessionsListItem__dropdownOptionDescription sessionsListItem__dropdownOptionDescription--disabled">
-														Deaktiviere Benachrichtigungen für diesen Chat.
+														{translate('chatFlyout.muteDescription')}
 													</p>
 												</div>
 											</button>
@@ -883,12 +950,12 @@ export const SessionListItemComponent = ({
 												<div className="sessionsListItem__dropdownOptionCenter">
 													<div className="sessionsListItem__dropdownOptionTitleRow">
 														<span className="sessionsListItem__dropdownOptionTitle sessionsListItem__dropdownOptionTitle--disabled">
-															Hilfe Anfragen
+															{translate('chatFlyout.help')}
 														</span>
 														<kbd className="sessionsListItem__dropdownOptionShortcut">⇧Ä</kbd>
 													</div>
 													<p className="sessionsListItem__dropdownOptionDescription sessionsListItem__dropdownOptionDescription--disabled">
-														Eskaliere den Fall intern oder extern ohne den Datenschutz zu vernachlässigen.
+														{translate('chatFlyout.helpDescription')}
 													</p>
 												</div>
 											</button>
@@ -904,12 +971,12 @@ export const SessionListItemComponent = ({
 												<div className="sessionsListItem__dropdownOptionCenter">
 													<div className="sessionsListItem__dropdownOptionTitleRow">
 														<span className="sessionsListItem__dropdownOptionTitle sessionsListItem__dropdownOptionTitle--disabled">
-															Weitere Personen einladen
+															{translate('chatFlyout.invite')}
 														</span>
 														<kbd className="sessionsListItem__dropdownOptionShortcut">⇧I</kbd>
 													</div>
 													<p className="sessionsListItem__dropdownOptionDescription sessionsListItem__dropdownOptionDescription--disabled">
-														Wer eingeladen werden kann, hängt von den Admin-Einstellungen ab.
+														{translate('chatFlyout.inviteDescription')}
 													</p>
 												</div>
 											</button>
@@ -922,49 +989,18 @@ export const SessionListItemComponent = ({
 												<div className="sessionsListItem__dropdownOptionCenter">
 													<div className="sessionsListItem__dropdownOptionTitleRow">
 														<span className="sessionsListItem__dropdownOptionTitle sessionsListItem__dropdownOptionTitle--disabled">
-															Chat Zusammenfassen
+															{translate('chatFlyout.summarize')}
 														</span>
 														<kbd className="sessionsListItem__dropdownOptionShortcut">⇧Ü</kbd>
 													</div>
 													<p className="sessionsListItem__dropdownOptionDescription sessionsListItem__dropdownOptionDescription--disabled">
-														Spare Zeit, mit Hilfe unseres vollends Datenschutzkonformen KI Workflows.
+														{translate('chatFlyout.summarizeDescription')}
 													</p>
 												</div>
 											</button>
-											{hasUserAuthority(AUTHORITIES.CONSULTANT_DEFAULT, userData) &&
-												type !== SESSION_LIST_TYPES.ENQUIRY &&
-												activeSession.isSession && (
-													<DeleteSession
-														chatId={activeSession.item.id}
-														onSuccess={onSuccessDeleteSession}
-													>
-														{(onClick) => (
-															<button
-																onClick={() => {
-																	setFlyoutOpen(false);
-																	onClick();
-																}}
-																className="sessionsListItem__dropdownOption"
-																type="button"
-															>
-																<TrashIcon className="sessionsListItem__dropdownOptionIcon" />
-																<div className="sessionsListItem__dropdownOptionCenter">
-																	<div className="sessionsListItem__dropdownOptionTitleRow">
-																		<span className="sessionsListItem__dropdownOptionTitle">
-																			{translate('chatFlyout.remove') || 'Löschen'}
-																		</span>
-																		<kbd className="sessionsListItem__dropdownOptionShortcut">⇧D</kbd>
-																	</div>
-																	<p className="sessionsListItem__dropdownOptionDescription">
-																		{translate('chatFlyout.remove.description') || 'Chat dauerhaft löschen.'}
-																	</p>
-																</div>
-															</button>
-														)}
-													</DeleteSession>
-												)}
 										</div>
-									</div>
+									</div>,
+									document.body
 								)}
 							</>
 						)}
