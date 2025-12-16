@@ -370,12 +370,13 @@ export const GroupChatHeader = ({
 									return !userId.includes('@system') && !userId.includes('@caritas.local');
 								})
 								.map((member, index, filteredMembers) => {
-									// Extract display name from userId (format: @username:domain)
+									// Extract username from userId (format: @username:domain)
+									// Always use username from userId, ignore member.name to ensure consistency
 									const userId = member.userId || '';
-									const displayName = member.name || userId.split(':')[0]?.replace('@', '') || userId;
+									const username = userId.split(':')[0]?.replace('@', '') || userId;
 									return (
 										<span key={member.userId || index} className="sessionInfo__participant">
-											{decodeUsername(displayName)}
+											{decodeUsername(username)}
 											{index < filteredMembers.length - 1 && ', '}
 										</span>
 									);
