@@ -2125,7 +2125,7 @@
 			}
 		},
 		"user": {
-			"consultantUnknown": "Beratersuche läuft",
+			"consultantUnknown": "Anfragephase",
 			"headline": "Meine Beratungen",
 			"peer": "Peer",
 			"writeEnquiry": "Jetzt Nachricht schreiben"

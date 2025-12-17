@@ -2073,7 +2073,7 @@
 			}
 		},
 		"user": {
-			"consultantUnknown": "Search for consultants underway",
+			"consultantUnknown": "Request stage",
 			"headline": "My consultations",
 			"peer": "Peer",
 			"writeEnquiry": "Write message now"

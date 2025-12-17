@@ -298,11 +298,11 @@ export const GroupCallWidget: React.FC = () => {
             {callData.isIncoming && callData.state === 'ringing' ? (
                 <div className="incoming-call-popup">
                     <div className="incoming-call-header">
-                        <span>GROUP CALL</span>
+                        <span>CALL</span>
                     </div>
                     <div className="incoming-call-content">
                         <div className="call-avatar-large">G</div>
-                        <h2>Incoming Group Call</h2>
+                        <h2>Incoming Call</h2>
                         <p>Someone is calling...</p>
                         <div className="incoming-call-actions">
                             <button className="btn-answer" onClick={handleAnswer}>
@@ -318,9 +318,9 @@ export const GroupCallWidget: React.FC = () => {
                 /* Active call - show Element Call iframe */
                 <div className="element-call-container">
                     <div className="element-call-header">
-                        <span>GROUP CALL</span>
+                        <span>CALL</span>
                         <button className="btn-end-call" onClick={handleEndCall}>
-                            End Call
+                            Close
                         </button>
                     </div>
                     <iframe
