@@ -125,6 +125,7 @@ export class MatrixLiveEventBridge {
         const eventTimestamp = event.getTs();
         const now = Date.now();
         const ageSeconds = Math.floor((now - eventTimestamp) / 1000);
+        const callRoomId = content.call_room_id || room.roomId;
         
         console.log("═══════════════════════════════════════════════");
         console.log("🔔 CALL INVITE EVENT RECEIVED");
@@ -172,6 +173,7 @@ export class MatrixLiveEventBridge {
             console.log("📞 From:", sender);
             console.log("📞 To me:", myUserId);
             console.log("🎥 Is Video:", isVideo);
+            console.log("🏠 Element Call room:", callRoomId);
             
             // Mark as processed BEFORE triggering event
             this.processedCallInvites.add(callId);
@@ -182,10 +184,12 @@ export class MatrixLiveEventBridge {
             console.log("═══════════════════════════════════════════════");
             
             callManager.receiveCall(
-                room.roomId,
+                callRoomId,
                 isVideo,
                 callId,
-                sender
+                sender,
+                true,
+                room.roomId
             );
             return;
         }
@@ -206,7 +210,9 @@ export class MatrixLiveEventBridge {
             room.roomId,
             true, // Assume video for now (can be enhanced)
             callId,
-            sender
+            sender,
+            false,
+            room.roomId
         );
     }
 

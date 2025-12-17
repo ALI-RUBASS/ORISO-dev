@@ -645,4 +645,3 @@ const StyledWrapper = styled.div`
 `;
 
 export default NotFound;
-

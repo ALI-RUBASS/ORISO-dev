@@ -51,11 +51,12 @@ metadata:
   labels:
     app: livekit-token-service
 spec:
-  type: ClusterIP
+  type: NodePort
   ports:
   - name: http
     port: 3010
     targetPort: 3010
+    nodePort: 30101
     protocol: TCP
   selector:
     app: livekit-token-service

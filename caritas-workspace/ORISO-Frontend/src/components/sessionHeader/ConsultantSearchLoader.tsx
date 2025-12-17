@@ -24,4 +24,3 @@ export const ConsultantSearchLoader: React.FC<ConsultantSearchLoaderProps> = ({
 		</div>
 	);
 };
-

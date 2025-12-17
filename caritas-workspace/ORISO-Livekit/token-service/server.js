@@ -17,7 +17,7 @@ app.get('/health', (req, res) => {
     res.json({ status: 'ok', service: 'livekit-token-service' });
 });
 
-// Generate LiveKit token (GET with query params)
+// Generate LiveKit token (GET with query params) - for direct calls
 app.get('/api/livekit/token', async (req, res) => {
     try {
         const { roomName, identity } = req.query;
@@ -52,6 +52,56 @@ app.get('/api/livekit/token', async (req, res) => {
         res.status(500).json({ error: 'Failed to generate token', details: error.message });
     }
 });
+
+// Shared handler for Element Call SFU JWT requests
+async function handleSfuRequest(req, res) {
+    try {
+        const { room, openid_token, device_id } = req.body;
+
+        if (!room || !openid_token) {
+            return res.status(400).json({ error: 'room and openid_token are required' });
+        }
+
+        console.log(`📞 Element Call SFU request - Room: ${room}, Device: ${device_id || 'unknown'}`);
+
+        // NOTE: For production you should validate the Matrix OpenID token with the homeserver.
+        // For now we trust the token and just use it to derive an identity.
+        const identity = device_id || `user_${Date.now()}`;
+
+        // Create LiveKit access token
+        const at = new AccessToken(LIVEKIT_API_KEY, LIVEKIT_API_SECRET, {
+            identity,
+            name: identity,
+        });
+
+        // Grant full room permissions
+        at.addGrant({
+            room,
+            roomJoin: true,
+            canPublish: true,
+            canSubscribe: true,
+        });
+
+        const jwt = await at.toJwt();
+
+        // LiveKit server URL (WebSocket URL for connecting)
+        const livekitUrl = process.env.LIVEKIT_URL || 'wss://livekit.oriso.site';
+
+        console.log(`✅ SFU token generated for room ${room}, identity: ${identity}`);
+
+        // Element Call expects: { url, jwt }
+        res.json({ url: livekitUrl, jwt });
+    } catch (error) {
+        console.error('❌ Error generating SFU token:', error);
+        res.status(500).json({ error: 'Failed to generate SFU token', details: error.message });
+    }
+}
+
+// Legacy SFU endpoint used by Element Call via /api/livekit/token base URL
+app.post('/api/livekit/token/sfu/get', handleSfuRequest);
+
+// MSC4195-compliant MatrixRTC Authorization Service endpoint used via /livekit/jwt base URL
+app.post('/livekit/jwt/sfu/get', handleSfuRequest);
 
 app.listen(PORT, () => {
     console.log(`🚀 LiveKit Token Service running on port ${PORT}`);
