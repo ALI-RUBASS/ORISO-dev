@@ -87,12 +87,12 @@ $icon-size-small: 16px;
 		position: relative;
 		z-index: 10;
 		overflow: hidden;
-
+        margin-bottom: 6px;
 	
 
 
 		@include breakpoint($fromMedium) {
-			margin: 0 $grid-base-three;
+			margin: 6px $grid-base-three;
 		}
 
 		&:focus-visible {
