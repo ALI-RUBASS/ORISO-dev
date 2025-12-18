@@ -1,0 +1,3 @@
+[submodule "caritas-workspace/ORISO-ElementCall"]
+	path = caritas-workspace/ORISO-ElementCall
+	url = https://github.com/OpenResilienceInitiative/ORISO-ElementCall.git
