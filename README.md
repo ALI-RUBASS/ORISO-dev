@@ -24,14 +24,15 @@
 10. [Deploy Backend Services](#10-deploy-backend-services)
 11. [Deploy Frontend](#11-deploy-frontend)
 12. [Deploy Matrix Communication](#12-deploy-matrix-communication)
-13. [Deploy Nginx Proxy](#13-deploy-nginx-proxy)
-14. [Deploy Monitoring](#14-deploy-monitoring)
-15. [Post-Deployment Configuration](#15-post-deployment-configuration)
-16. [DNS & SSL Setup](#16-dns--ssl-setup) ⭐ **Important for HTTPS**
-17. [Verification & Testing](#17-verification--testing)
-18. [Backup Configuration](#18-backup-configuration)
-19. [Security Hardening](#19-security-hardening)
-20. [Troubleshooting](#20-troubleshooting)
+13. [Deploy LiveKit & Element Call](#13-deploy-livekit--element-call) ⭐ **Video/Audio Calling**
+14. [Deploy Nginx Proxy](#14-deploy-nginx-proxy)
+15. [Deploy Monitoring](#15-deploy-monitoring)
+16. [Post-Deployment Configuration](#16-post-deployment-configuration)
+17. [DNS & SSL Setup](#17-dns--ssl-setup) ⭐ **Important for HTTPS**
+18. [Verification & Testing](#18-verification--testing)
+19. [Backup Configuration](#19-backup-configuration)
+20. [Security Hardening](#20-security-hardening)
+21. [Troubleshooting](#21-troubleshooting)
 
 ---
 
@@ -92,6 +93,10 @@
 - `80` - HTTP (required for Let's Encrypt certificate validation)
 - `443` - HTTPS (primary access method via Traefik Ingress)
 - `8089` - Nginx Proxy (legacy HTTP access, optional)
+- `7880` - LiveKit Server (WebRTC signaling)
+- `50000-50100` - LiveKit RTC Port Range (UDP/TCP for media streams)
+- `3478` - TURN/STUN (UDP/TCP for NAT traversal)
+- `3010` - LiveKit Token Service
 
 #### Required Ports (Internal/Services)
 - `3306` - MariaDB
@@ -105,16 +110,26 @@
 - `8083` - ConsultingTypeService
 - `8084` - AgencyService
 - `8085` - UploadService
-- `8086` - VideoService
-- `9001` - Frontend
-- `9002` - Admin
+- `8086` - LiveService (formerly VideoService)
+- `9001` - Frontend (port 80 internal)
+- `9000` - Admin
 - `8008` - Matrix Synapse
+- `5432` - Matrix PostgreSQL
 - `8087` - Element.io
+- `7880` - LiveKit Server
+- `50000-50100` - LiveKit RTC Port Range
+- `3010` - LiveKit Token Service
+- `80` - Element Call
 - `9021` - Redis Commander
 - `9020` - Redis Exporter
 - `9100` - Health Dashboard
-- `3001` - SignOZ (optional)
+- `9200` - Status Page
+- `6006` - Storybook
+- `8001` - RedisInsight
+- `8080` - SignOZ (optional)
 - `4317` - OTEL Collector (optional)
+- `30100` - Jitsi JVB (UDP)
+- `30443-30445` - Jitsi Meet
 
 ---
 
@@ -278,6 +293,16 @@ sudo ufw allow 3001/tcp
 
 # Allow Matrix Synapse (if direct access needed)
 sudo ufw allow 8008/tcp
+
+# Allow LiveKit (WebRTC/TURN/STUN)
+sudo ufw allow 7880/tcp
+sudo ufw allow 50000:50100/udp
+sudo ufw allow 50000:50100/tcp
+sudo ufw allow 3478/udp
+sudo ufw allow 3478/tcp
+
+# Allow LiveKit Token Service
+sudo ufw allow 3010/tcp
 
 # Enable UFW
 sudo ufw enable
@@ -507,7 +532,10 @@ ls -la
 # ORISO-Matrix/
 # ORISO-SignOZ/
 # ORISO-Element/
+# ORISO-ElementCall/
+# ORISO-Livekit/
 # ORISO-HealthDashboard/
+# ORISO-Status/
 # ORISO-Frontend/
 # ORISO-Admin/
 # ORISO-TenantService/
@@ -1064,9 +1092,127 @@ echo "Element.io: http://$SERVER_IP:8087"
 
 ---
 
-## 13. Deploy Nginx Proxy
+## 13. Deploy LiveKit & Element Call
 
-### 13.1 Deploy Nginx ConfigMap and Proxy
+### 13.1 Deploy LiveKit Server
+
+**LiveKit is a WebRTC platform for real-time video and audio communication:**
+
+```bash
+cd ~/online-beratung/caritas-workspace/ORISO-Livekit
+
+# Deploy LiveKit server
+kubectl apply -f deployment.yaml
+kubectl apply -f service.yaml
+
+# Wait for LiveKit
+kubectl wait --for=condition=ready pod -l app=livekit -n caritas --timeout=300s
+
+# Check status
+kubectl get pods -n caritas | grep livekit
+
+# Should see:
+# livekit-xxx    1/1     Running
+```
+
+**LiveKit Configuration:**
+- **API Key**: `APIm7qGJ8kR3fN2pL5tX`
+- **API Secret**: `secretW9vY4bH6nK8mP2qR7sT3xZ5A1B2C3D4E5F6G7H8`
+- **Port**: `7880`
+- **RTC Port Range**: `50000-50100`
+- **Public IP**: Your server IP (configured as `LIVEKIT_NODE_IP`)
+
+### 13.2 Deploy LiveKit Token Service
+
+**Token service generates JWT tokens for LiveKit authentication:**
+
+```bash
+cd ~/online-beratung/caritas-workspace/ORISO-Livekit
+
+# Deploy token service
+kubectl apply -f token-service-deployment.yaml
+kubectl apply -f token-service-service.yaml
+
+# Wait for token service
+kubectl wait --for=condition=ready pod -l app=livekit-token-service -n caritas --timeout=180s
+
+# Check status
+kubectl get pods -n caritas | grep livekit-token
+
+# Should see:
+# livekit-token-service-xxx    1/1     Running
+```
+
+**Token Service Configuration:**
+- **Port**: `3010` (exposed as NodePort `30101`)
+- **API Key**: Same as LiveKit server
+- **API Secret**: Same as LiveKit server
+
+### 13.3 Deploy Element Call
+
+**Element Call is a group calling solution built on Matrix and LiveKit:**
+
+```bash
+cd ~/online-beratung/caritas-workspace/ORISO-ElementCall
+
+# Deploy Element Call
+kubectl apply -f deployment.yaml
+kubectl apply -f service.yaml
+kubectl apply -f ingress.yaml
+
+# Wait for Element Call
+kubectl wait --for=condition=ready pod -l app=element-call -n caritas --timeout=300s
+
+# Check status
+kubectl get pods -n caritas | grep element-call
+
+# Should see:
+# element-call-xxx    1/1     Running
+```
+
+**Element Call Configuration:**
+- **Port**: `80` (internal)
+- **HTTPS URL**: `https://call.oriso.site`
+- **Matrix Integration**: Connects to `https://matrix.oriso.site`
+- **LiveKit Integration**: Uses LiveKit for WebRTC media
+
+### 13.4 Verify LiveKit & Element Call
+
+```bash
+# Check LiveKit health
+curl http://127.0.0.1:7880
+# Expected: LiveKit server info
+
+# Check Element Call
+curl -I https://call.oriso.site
+# Expected: HTTP/2 200
+
+# Check LiveKit Token Service
+curl http://127.0.0.1:3010/health
+# Expected: {"status":"ok"}
+
+# Access in browser
+echo "Element Call: https://call.oriso.site"
+echo "LiveKit Server: http://$(hostname -I | awk '{print $1}'):7880"
+echo "Token Service: http://$(hostname -I | awk '{print $1}'):3010"
+```
+
+### 13.5 Test Video/Audio Call
+
+1. **Access Frontend**: `https://app.oriso.site`
+2. **Login** with a registered user
+3. **Start a call** from a chat session
+4. **Verify**:
+   - Video/audio streams work
+   - Screen sharing works
+   - Multiple participants can join
+   - Call quality is good
+
+---
+
+## 14. Deploy Nginx Proxy
+
+### 14.1 Deploy Nginx ConfigMap and Proxy
 
 ```bash
 cd ~/online-beratung/caritas-workspace/ORISO-Kubernetes
@@ -1087,7 +1233,7 @@ kubectl get pods -n caritas | grep cob-proxy
 # cob-proxy-xxx    1/1     Running
 ```
 
-### 13.2 Verify Nginx Proxy
+### 14.2 Verify Nginx Proxy
 
 ```bash
 # Check Nginx
@@ -1104,9 +1250,9 @@ echo "Main Entry Point: http://$SERVER_IP:8089"
 
 ---
 
-## 14. Deploy Monitoring
+## 15. Deploy Monitoring
 
-### 14.1 Deploy Legacy Health Dashboard
+### 15.1 Deploy Legacy Health Dashboard
 
 ```bash
 cd ~/online-beratung/caritas-workspace/ORISO-Kubernetes
@@ -1123,7 +1269,7 @@ kubectl get pods -n caritas | grep health-dashboard
 # Access: https://health.oriso.site (port 9100)
 ```
 
-### 14.2 Deploy New Status Page (Recommended)
+### 15.2 Deploy New Status Page (Recommended)
 
 **The new status page provides a professional monitoring interface:**
 
@@ -1151,7 +1297,7 @@ kubectl get pods -n caritas | grep status-page
 - Professional status page design
 - Runs on port 9200 (separate from legacy health dashboard on 9100)
 
-### 14.3 Deploy SignOZ (Optional)
+### 15.3 Deploy SignOZ (Optional)
 
 ```bash
 cd ~/online-beratung/caritas-workspace/ORISO-SignOZ
@@ -1175,7 +1321,7 @@ kubectl wait --for=condition=ready pod -l app.kubernetes.io/instance=signoz -n s
 kubectl get svc -n signoz signoz-frontend
 ```
 
-### 14.3 Apply All Services
+### 15.4 Apply All Services
 
 ```bash
 cd ~/online-beratung/caritas-workspace/ORISO-Kubernetes
@@ -1191,9 +1337,9 @@ kubectl get svc -n caritas
 
 ---
 
-## 15. Post-Deployment Configuration
+## 16. Post-Deployment Configuration
 
-### 15.1 Verify All Pods are Running
+### 16.1 Verify All Pods are Running
 
 ```bash
 cd ~/online-beratung/caritas-workspace/ORISO-Kubernetes
@@ -1213,7 +1359,7 @@ kubectl get pods -n caritas | grep -v Running | grep -v Completed
 # Should be empty or only pending pods
 ```
 
-### 15.2 Check Service Health
+### 16.2 Check Service Health
 
 ```bash
 # Backend Services
@@ -1236,7 +1382,7 @@ curl -s http://127.0.0.1:8008/_matrix/client/versions | jq .
 curl -I http://127.0.0.1:9021
 ```
 
-### 15.3 Get All Access URLs
+### 16.3 Get All Access URLs
 
 ```bash
 SERVER_IP=$(hostname -I | awk '{print $1}')
@@ -1255,20 +1401,28 @@ cat <<EOF
   Authentication:   https://auth.$DOMAIN/admin/
                       (Login: admin / admin)
   Matrix Synapse:   https://matrix.$DOMAIN
-  Element UI:       https://app.beta.$DOMAIN
+  Element UI:       https://element.$DOMAIN
+  Element Call:     https://call.$DOMAIN
+  LiveKit Server:   https://livekit.$DOMAIN
   Status Page:      https://status.$DOMAIN
   Health Dashboard: https://health.$DOMAIN
+  Storybook:        https://storybook.$DOMAIN
   SignOZ:           https://signoz.$DOMAIN (if deployed)
   Redis Commander:  https://redis.$DOMAIN
 
 🔗 Legacy HTTP URLs (Fallback):
   Nginx Proxy:      http://$SERVER_IP:8089
   Frontend:         http://$SERVER_IP:9001
-  Admin:            http://$SERVER_IP:9002
+  Admin:            http://$SERVER_IP:9000
   Keycloak:         http://$SERVER_IP:8080
   Element.io:       http://$SERVER_IP:8087
+  Element Call:     http://$SERVER_IP:80 (via ingress)
   Matrix:           http://$SERVER_IP:8008
+  LiveKit:          http://$SERVER_IP:7880
+  LiveKit Token:    http://$SERVER_IP:3010
   Health Dashboard: http://$SERVER_IP:9100
+  Status Page:      http://$SERVER_IP:9200
+  Storybook:        http://$SERVER_IP:6006
 
 🔧 Backend Services (Health Checks - Internal):
   TenantService:         http://$SERVER_IP:8081/actuator/health
@@ -1276,7 +1430,7 @@ cat <<EOF
   ConsultingTypeService: http://$SERVER_IP:8083/actuator/health
   AgencyService:         http://$SERVER_IP:8084/actuator/health
   UploadService:         http://$SERVER_IP:8085/actuator/health
-  VideoService:          http://$SERVER_IP:8086/actuator/health
+  LiveService:           http://$SERVER_IP:8086/actuator/health
 
 📋 Note:
   - All HTTPS URLs require DNS A records configured
@@ -1291,9 +1445,9 @@ EOF
 
 ---
 
-## 16. DNS & SSL Setup
+## 17. DNS & SSL Setup
 
-### 16.1 Configure DNS Records
+### 17.1 Configure DNS Records
 
 **Required DNS A Records** (replace `oriso.site` with your domain):
 
@@ -1308,7 +1462,9 @@ auth.oriso.site        → YOUR_SERVER_IP    # Keycloak (port 8080)
 
 # Communication Services
 matrix.oriso.site      → YOUR_SERVER_IP    # Matrix Synapse (port 8008)
-app.beta.oriso.site    → YOUR_SERVER_IP    # Element UI (port 8087)
+element.oriso.site     → YOUR_SERVER_IP    # Element UI (port 8087)
+call.oriso.site        → YOUR_SERVER_IP    # Element Call (port 80)
+livekit.oriso.site     → YOUR_SERVER_IP    # LiveKit Server (port 7880)
 
 # Monitoring & Management
 signoz.oriso.site      → YOUR_SERVER_IP    # SignOZ (port 3001)
@@ -1322,7 +1478,7 @@ redis.oriso.site       → YOUR_SERVER_IP    # Redis Commander (port 9021)
 4. Set TTL to 300-600 seconds for faster propagation during setup
 5. Wait 5-10 minutes for DNS propagation (use `dig status.oriso.site` to verify)
 
-### 16.2 Install Cert-Manager for Automatic SSL
+### 17.2 Install Cert-Manager for Automatic SSL
 
 **Cert-manager automatically provisions SSL certificates from Let's Encrypt:**
 
@@ -1360,7 +1516,7 @@ kubectl get clusterissuer
 # Should show: letsencrypt-prod   Ready
 ```
 
-### 16.3 Configure Ingress with TLS
+### 17.3 Configure Ingress with TLS
 
 **Traefik is pre-installed with k3s and handles Ingress routing:**
 
@@ -1398,7 +1554,7 @@ spec:
               number: 9001
 ```
 
-### 16.4 Deploy Ingress Resources
+### 17.4 Deploy Ingress Resources
 
 **Each service has its own ingress file in its repository:**
 
@@ -1431,6 +1587,14 @@ kubectl apply -f ingress.yaml
 cd ~/online-beratung/caritas-workspace/ORISO-Element
 kubectl apply -f ingress.yaml
 
+# Element Call
+cd ~/online-beratung/caritas-workspace/ORISO-ElementCall
+kubectl apply -f ingress.yaml
+
+# LiveKit
+cd ~/online-beratung/caritas-workspace/ORISO-Livekit
+kubectl apply -f ingress.yaml
+
 # SignOZ (optional)
 cd ~/online-beratung/caritas-workspace/ORISO-SignOZ
 kubectl apply -f ingress.yaml
@@ -1438,9 +1602,13 @@ kubectl apply -f ingress.yaml
 # Redis Commander
 cd ~/online-beratung/caritas-workspace/ORISO-Redis
 kubectl apply -f ingress.yaml
+
+# Storybook
+cd ~/online-beratung/caritas-workspace/ORISO-Frontend
+kubectl apply -f storybook-ingress.yaml
 ```
 
-### 16.5 Verify SSL Certificates
+### 17.5 Verify SSL Certificates
 
 ```bash
 # Check certificate status
@@ -1462,7 +1630,7 @@ curl -I https://auth.oriso.site
 kubectl describe certificate app-oriso-site-tls -n caritas
 ```
 
-### 16.6 Certificate Auto-Renewal
+### 17.6 Certificate Auto-Renewal
 
 **Cert-manager automatically renews certificates 30 days before expiration:**
 
@@ -1480,9 +1648,9 @@ kubectl delete certificate app-oriso-site-tls -n caritas
 
 ---
 
-## 17. Verification & Testing
+## 18. Verification & Testing
 
-### 17.1 Run Complete Verification
+### 18.1 Run Complete Verification
 
 ```bash
 cd ~/online-beratung/caritas-workspace/ORISO-Kubernetes
@@ -1497,7 +1665,7 @@ cd ~/online-beratung/caritas-workspace/ORISO-Kubernetes
 # ✓ All services have ClusterIP
 ```
 
-### 17.2 Test User Registration
+### 18.2 Test User Registration
 
 1. **Access Frontend**: `http://YOUR_SERVER_IP:9001`
 2. **Click "Register"**
@@ -1511,7 +1679,7 @@ cd ~/online-beratung/caritas-workspace/ORISO-Kubernetes
    - User can login
    - Matrix account is created
 
-### 17.3 Test Authentication Flow
+### 18.3 Test Authentication Flow
 
 ```bash
 # Get access token
@@ -1525,7 +1693,7 @@ curl -X POST "http://$SERVER_IP:8089/auth/realms/online-beratung/protocol/openid
 # Should return access_token
 ```
 
-### 17.4 Test Backend API
+### 18.4 Test Backend API
 
 ```bash
 # Get access token first
@@ -1540,7 +1708,7 @@ curl -H "Authorization: Bearer $ACCESS_TOKEN" \
   http://$SERVER_IP:8082/users/data | jq .
 ```
 
-### 17.5 Test Matrix Chat
+### 18.5 Test Matrix Chat
 
 1. **Access Element.io**: `http://YOUR_SERVER_IP:8087`
 2. **Login** with registered user
@@ -1550,9 +1718,9 @@ curl -H "Authorization: Bearer $ACCESS_TOKEN" \
 
 ---
 
-## 18. Backup Configuration
+## 19. Backup Configuration
 
-### 18.1 Setup Database Backups
+### 19.1 Setup Database Backups
 
 ```bash
 # Create backup directory
@@ -1593,7 +1761,7 @@ chmod +x /backup/oriso/backup-databases.sh
 /backup/oriso/backup-databases.sh
 ```
 
-### 18.2 Setup Automated Backups (Cron)
+### 19.2 Setup Automated Backups (Cron)
 
 ```bash
 # Add to crontab
@@ -1609,7 +1777,7 @@ crontab -e
 crontab -l
 ```
 
-### 18.3 Backup Kubernetes Configurations
+### 19.3 Backup Kubernetes Configurations
 
 ```bash
 # Backup all Kubernetes resources
@@ -1630,9 +1798,9 @@ echo "Kubernetes configs backed up"
 
 ---
 
-## 19. Security Hardening
+## 20. Security Hardening
 
-### 19.1 Change Default Passwords
+### 20.1 Change Default Passwords
 
 ```bash
 # Change Keycloak admin password
@@ -1660,7 +1828,7 @@ kubectl exec -it -n caritas $MARIADB_POD -- \
 # Edit deployments and update SPRING_DATASOURCE_PASSWORD
 ```
 
-### 19.2 Setup Fail2Ban (SSH Protection)
+### 20.2 Setup Fail2Ban (SSH Protection)
 
 ```bash
 # Install Fail2Ban
@@ -1690,7 +1858,7 @@ sudo fail2ban-client status
 sudo fail2ban-client status sshd
 ```
 
-### 19.3 Disable Root SSH Login
+### 20.3 Disable Root SSH Login
 
 ```bash
 # Edit SSH config
@@ -1705,7 +1873,7 @@ PubkeyAuthentication yes
 sudo systemctl restart sshd
 ```
 
-### 19.4 Setup Automatic Security Updates
+### 20.4 Setup Automatic Security Updates
 
 ```bash
 # Install unattended-upgrades
@@ -1723,7 +1891,7 @@ APT::Periodic::Unattended-Upgrade "1";
 APT::Periodic::AutocleanInterval "7";' | sudo tee /etc/apt/apt.conf.d/20auto-upgrades
 ```
 
-### 19.5 Enable Audit Logging
+### 20.5 Enable Audit Logging
 
 ```bash
 # Install auditd
@@ -1739,9 +1907,9 @@ sudo systemctl status auditd
 
 ---
 
-## 20. Troubleshooting
+## 21. Troubleshooting
 
-### 20.1 Pod Issues
+### 21.1 Pod Issues
 
 #### Pods Stuck in Pending
 ```bash
@@ -1791,7 +1959,7 @@ docker pull <image>
 docker save <image> | sudo k3s ctr images import -
 ```
 
-### 20.2 Network Issues
+### 21.2 Network Issues
 
 #### Service Not Accessible
 ```bash
@@ -1824,7 +1992,7 @@ sudo ufw allow <port>/tcp
 sudo iptables -L -n
 ```
 
-### 20.3 Database Issues
+### 21.3 Database Issues
 
 #### Cannot Connect to MariaDB
 ```bash
@@ -1858,7 +2026,7 @@ kubectl exec -it -n caritas $MONGODB_POD -- mongosh --eval "show dbs"
 kubectl get svc -n caritas mongodb
 ```
 
-### 20.4 Keycloak Issues
+### 21.4 Keycloak Issues
 
 #### HTTPS Required Error
 ```bash
@@ -1924,7 +2092,7 @@ kubectl exec -n caritas $KEYCLOAK_POD -- \
 # If realm missing, re-import (see Section 8.2)
 ```
 
-### 20.5 HTTPS & SSL Certificate Issues
+### 21.5 HTTPS & SSL Certificate Issues
 
 #### Certificate Not Issued
 ```bash
@@ -1983,7 +2151,7 @@ kubectl describe ingress <ingress-name> -n caritas
 kubectl logs -n kube-system -l app.kubernetes.io/name=traefik --tail=100
 ```
 
-### 20.6 Backend Service Issues
+### 21.6 Backend Service Issues
 
 #### Service Returns 500 Error
 ```bash
@@ -2013,7 +2181,90 @@ curl http://127.0.0.1:<port>/actuator/health/redis | jq .
 kubectl rollout restart deployment/<service-name> -n caritas
 ```
 
-### 20.7 Frontend Issues
+### 21.7 LiveKit & Element Call Issues
+
+#### Video/Audio Not Working
+```bash
+# Check LiveKit server
+kubectl logs deployment/livekit -n caritas --tail=100
+
+# Check if LiveKit is accessible
+curl http://127.0.0.1:7880
+# Expected: LiveKit server info
+
+# Check LiveKit Token Service
+kubectl logs deployment/livekit-token-service -n caritas --tail=100
+curl http://127.0.0.1:3010/health
+# Expected: {"status":"ok"}
+
+# Verify RTC ports are open
+sudo ufw status | grep 50000
+sudo ufw status | grep 3478
+
+# Common issues:
+# - Firewall blocking UDP ports 50000-50100
+# - TURN/STUN ports (3478) not accessible
+# - LiveKit API key/secret mismatch
+# - NAT traversal issues
+```
+
+#### Element Call Not Loading
+```bash
+# Check Element Call pod
+kubectl logs deployment/element-call -n caritas --tail=100
+
+# Check if accessible via HTTPS
+curl -I https://call.oriso.site
+# Expected: HTTP/2 200
+
+# Verify Matrix integration
+kubectl get deployment element-call -n caritas -o yaml | grep -A 5 env:
+
+# Check browser console for errors
+# Common issues:
+# - Matrix homeserver URL incorrect
+# - LiveKit server URL not configured
+# - CORS issues with Matrix
+```
+
+#### Call Quality Issues
+```bash
+# Check LiveKit logs for errors
+kubectl logs deployment/livekit -n caritas --tail=200 | grep -i error
+
+# Check network bandwidth
+# LiveKit requires:
+# - Audio: ~50 kbps per participant
+# - Video (720p): ~1-2 Mbps per participant
+# - Video (1080p): ~2-4 Mbps per participant
+
+# Verify RTC port range is sufficient
+# Default: 50000-50100 (100 ports)
+# Increase if needed for more concurrent calls
+
+# Check server resources
+kubectl top pod -n caritas | grep livekit
+```
+
+#### TURN/STUN Not Working
+```bash
+# Verify TURN/STUN ports are open
+sudo netstat -tulpn | grep 3478
+
+# Check LiveKit TURN configuration
+kubectl get deployment livekit -n caritas -o yaml | grep -A 10 LIVEKIT
+
+# Test TURN connectivity
+# Use online TURN/STUN test tools:
+# https://webrtc.github.io/samples/src/content/peerconnection/trickle-ice/
+
+# Common issues:
+# - Port 3478 UDP blocked by firewall
+# - Public IP not configured correctly
+# - NAT/firewall blocking UDP traffic
+```
+
+### 21.8 Frontend Issues
 
 #### Frontend Shows White Screen
 ```bash
@@ -2041,7 +2292,7 @@ kubectl get configmap oriso-nginx-config -n caritas -o yaml | grep -A 10 "add_he
 curl -I http://127.0.0.1:8081/actuator/health
 ```
 
-### 20.8 Useful Debug Commands
+### 21.9 Useful Debug Commands
 
 ```bash
 # Check all pods status
@@ -2121,14 +2372,17 @@ curl http://127.0.0.1:<port>/actuator/health
 #### HTTPS URLs (Production)
 | Service | HTTPS URL | Internal Port | Health Check |
 |---------|-----------|---------------|--------------|
-| Frontend | https://app.oriso.site | 9001 | / |
+| Frontend | https://app.oriso.site | 80 | / |
 | Admin | https://admin.oriso.site | 9000 | / |
 | API Gateway | https://api.oriso.site | 8089 | / |
 | Keycloak | https://auth.oriso.site | 8080 | /auth |
 | Matrix | https://matrix.oriso.site | 8008 | /_matrix/client/versions |
-| Element | https://app.beta.oriso.site | 8087 | / |
+| Element | https://element.oriso.site | 8087 | / |
+| Element Call | https://call.oriso.site | 80 | / |
+| LiveKit | https://livekit.oriso.site | 7880 | / |
 | Status Page | https://status.oriso.site | 9200 | / |
 | Health Dashboard | https://health.oriso.site | 9100 | / |
+| Storybook | https://storybook.oriso.site | 6006 | / |
 
 #### Backend Services (Internal)
 | Service | Internal Port | Health Check |
@@ -2138,7 +2392,8 @@ curl http://127.0.0.1:<port>/actuator/health
 | ConsultingTypeService | 8083 | /actuator/health |
 | AgencyService | 8084 | /actuator/health |
 | UploadService | 8085 | /actuator/health |
-| VideoService | 8086 | /actuator/health |
+| LiveService | 8086 | /actuator/health |
+| LiveKit Token Service | 3010 | /health |
 
 ### Important Files & Directories
 
@@ -2225,13 +2480,26 @@ If you've followed all steps, you should now have:
 
 ---
 
-**Document Version**: 2.0.0  
+**Document Version**: 2.1.0  
 **Created**: October 31, 2025  
-**Last Updated**: November 5, 2025  
+**Last Updated**: December 18, 2025  
 **Platform**: ORISO (Online Beratung)  
 **Kubernetes**: k3s 1.21+  
 **OS**: Ubuntu 22.04 LTS  
-**Status**: Production Ready with HTTPS & Subdomains
+**Status**: Production Ready with HTTPS, Video/Audio Calling & Subdomains
+
+**Major Updates in v2.1.0:**
+- ✅ LiveKit WebRTC server integration for real-time video/audio
+- ✅ Element Call deployment for group video calling
+- ✅ LiveKit Token Service for JWT authentication
+- ✅ TURN/STUN server configuration for NAT traversal
+- ✅ RTC port range (50000-50100) for media streams
+- ✅ Complete firewall rules for WebRTC (UDP/TCP)
+- ✅ Storybook component library deployment
+- ✅ Updated service ports and ingress configurations
+- ✅ Matrix PostgreSQL database (replacing SQLite)
+- ✅ Automated backup cronjobs for MariaDB and Matrix
+- ✅ System user (group-chat-system) for group chat functionality
 
 **Major Updates in v2.0.0:**
 - ✅ Complete HTTPS migration with Let's Encrypt SSL certificates
