@@ -157,9 +157,9 @@ export const init = async (
 								translation?.cache?.disabled
 							) && LocalStorageBackend,
 
-							translation?.weblate.path && FetchBackend,
-							resourcesToBackend(unflatten(baseResources))
-						].filter(Boolean),
+						translation?.weblate.path && FetchBackend,
+						resourcesToBackend(unflatten(baseResources) as any)
+					].filter(Boolean),
 						backendOptions: [
 							!(
 								translationCacheDisabledLocally ??
