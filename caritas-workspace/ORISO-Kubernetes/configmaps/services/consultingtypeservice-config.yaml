@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: consultingtypeservice-config
+  namespace: caritas
+data:
+  # Database Configuration - Use service names (same namespace)
+  SPRING_DATASOURCE_URL: "jdbc:mariadb://mariadb:3306/consultingtypeservice"
+  
+  # Keycloak Configuration - Use service names
+  KEYCLOAK_AUTH_SERVER_URL: "http://keycloak:8080"
+  KEYCLOAK_REALM: "online-beratung"
+  SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: "http://keycloak:8080/realms/online-beratung"
+  
+  # MongoDB Configuration - Use service names
+  SPRING_DATA_MONGODB_URI: "mongodb://mongodb:27017/consulting_types?retryWrites=false"
+  
+  # Service URLs - Use service names
+  TENANT_SERVICE_API_URL: "http://tenantservice:8081"
+  
+  # App Base URL
+  APP_BASE_URL: "http://localhost:8083"
+  
+  # Spring Profile - Use local profile (application-local.properties)
+  SPRING_PROFILES_ACTIVE: "local"
+  
+  # Liquibase - Explicitly disabled (database schemas managed separately in ORISO-Database)
+  SPRING_LIQUIBASE_ENABLED: "false"
+

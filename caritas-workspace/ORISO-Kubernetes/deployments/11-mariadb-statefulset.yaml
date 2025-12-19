@@ -19,15 +19,24 @@ spec:
         image: mariadb:10.11
         env:
         - name: MYSQL_ROOT_PASSWORD
-          value: root
+          valueFrom:
+            secretKeyRef:
+              name: mariadb-secrets
+              key: MYSQL_ROOT_PASSWORD
         - name: MYSQL_DATABASE
-          value: caritas
+          valueFrom:
+            secretKeyRef:
+              name: mariadb-secrets
+              key: MYSQL_DATABASE
         ports:
         - containerPort: 3306
           name: mysql
         volumeMounts:
         - name: mariadb-data
           mountPath: /var/lib/mysql
+        - name: mariadb-config
+          mountPath: /etc/mysql/conf.d
+          readOnly: true
         resources:
           requests:
             cpu: 250m
@@ -40,7 +49,7 @@ spec:
             command:
             - sh
             - -c
-            - mysqladmin ping -uroot -proot
+            - mysqladmin ping -uroot -p$MYSQL_ROOT_PASSWORD
           initialDelaySeconds: 30
           periodSeconds: 10
           timeoutSeconds: 5
@@ -50,7 +59,7 @@ spec:
             command:
             - sh
             - -c
-            - mysql -uroot -proot -e 'SELECT 1;'
+            - mysql -uroot -p$MYSQL_ROOT_PASSWORD -e 'SELECT 1;'
           initialDelaySeconds: 10
           periodSeconds: 5
           timeoutSeconds: 3
@@ -67,4 +76,8 @@ spec:
   persistentVolumeClaimRetentionPolicy:
     whenDeleted: Retain
     whenScaled: Retain
+  volumes:
+  - name: mariadb-config
+    configMap:
+      name: mariadb-config
 
