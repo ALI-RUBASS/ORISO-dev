@@ -67,3 +67,12 @@ temp/caritas-workspace/caritas-rework-onlineBeratung-userService/*.jar
 # JAR files (too large for GitHub)
 *.jar
 userservice-matrix-live.tar.gz
+
+# Large backup files and directories
+# Git backup directories
+**/.git.backup/
+caritas-workspace/ORISO-ElementCall/.git.backup/
+
+# Matrix database backups (too large for GitHub)
+caritas-workspace/ORISO-Matrix/backups/
+**/backups/**/*.db
