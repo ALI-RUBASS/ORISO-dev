@@ -236,6 +236,14 @@ export async function createRoom(
     preset: Preset.PublicChat,
     name,
     room_alias_name: e2ee ? undefined : roomAliasLocalpartFromRoomName(name),
+    initial_state: [
+      {
+        type: "m.room.join_rules",
+        content: {
+          join_rule: "public",
+        },
+      },
+    ],
     power_level_content_override: {
       invite: 100,
       kick: 100,

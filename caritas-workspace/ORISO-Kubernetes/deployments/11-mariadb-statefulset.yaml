@@ -1,23 +1,34 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"apps/v1","kind":"StatefulSet","metadata":{"annotations":{},"name":"mariadb","namespace":"caritas"},"spec":{"replicas":1,"selector":{"matchLabels":{"app":"mariadb"}},"serviceName":"mariadb","template":{"metadata":{"labels":{"app":"mariadb"}},"spec":{"containers":[{"env":[{"name":"MYSQL_ROOT_PASSWORD","value":"root"},{"name":"MYSQL_DATABASE","value":"caritas"}],"image":"mariadb:10.11","livenessProbe":{"exec":{"command":["sh","-c","mysqladmin ping -uroot -proot"]},"failureThreshold":6,"initialDelaySeconds":30,"periodSeconds":10,"timeoutSeconds":5},"name":"mariadb","ports":[{"containerPort":3306,"name":"mysql"}],"readinessProbe":{"exec":{"command":["sh","-c","mysql -uroot -proot -e 'SELECT 1;'"]},"initialDelaySeconds":10,"periodSeconds":5,"timeoutSeconds":3},"resources":{"limits":{"cpu":"1000m","memory":"2Gi"},"requests":{"cpu":"250m","memory":"512Mi"}},"volumeMounts":[{"mountPath":"/var/lib/mysql","name":"mariadb-data"}]}]}},"volumeClaimTemplates":[{"metadata":{"name":"mariadb-data"},"spec":{"accessModes":["ReadWriteOnce"],"resources":{"requests":{"storage":"10Gi"}},"storageClassName":"local-path"}}]}}
+  creationTimestamp: "2025-10-14T11:05:08Z"
+  generation: 1
   name: mariadb
   namespace: caritas
+  resourceVersion: "3138632"
+  uid: 53e6735e-7066-481e-826e-b8944467ed5e
 spec:
-  serviceName: mariadb
+  persistentVolumeClaimRetentionPolicy:
+    whenDeleted: Retain
+    whenScaled: Retain
+  podManagementPolicy: OrderedReady
   replicas: 1
+  revisionHistoryLimit: 10
   selector:
     matchLabels:
       app: mariadb
+  serviceName: mariadb
   template:
     metadata:
+      creationTimestamp: null
       labels:
         app: mariadb
     spec:
       containers:
-      - name: mariadb
-        image: mariadb:10.11
-        env:
+      - env:
         - name: MYSQL_ROOT_PASSWORD
           valueFrom:
             secretKeyRef:
@@ -28,56 +39,79 @@ spec:
             secretKeyRef:
               name: mariadb-secrets
               key: MYSQL_DATABASE
-        ports:
-        - containerPort: 3306
-          name: mysql
-        volumeMounts:
-        - name: mariadb-data
-          mountPath: /var/lib/mysql
-        - name: mariadb-config
-          mountPath: /etc/mysql/conf.d
-          readOnly: true
-        resources:
-          requests:
-            cpu: 250m
-            memory: 512Mi
-          limits:
-            cpu: 1000m
-            memory: 2Gi
+        image: mariadb:10.11
+        imagePullPolicy: IfNotPresent
         livenessProbe:
           exec:
             command:
             - sh
             - -c
-            - mysqladmin ping -uroot -p$MYSQL_ROOT_PASSWORD
+            - mysqladmin ping -uroot -proot
+          failureThreshold: 6
           initialDelaySeconds: 30
           periodSeconds: 10
+          successThreshold: 1
           timeoutSeconds: 5
-          failureThreshold: 6
+        name: mariadb
+        ports:
+        - containerPort: 3306
+          name: mysql
+          protocol: TCP
         readinessProbe:
           exec:
             command:
             - sh
             - -c
-            - mysql -uroot -p$MYSQL_ROOT_PASSWORD -e 'SELECT 1;'
+            - mysql -uroot -proot -e 'SELECT 1;'
+          failureThreshold: 3
           initialDelaySeconds: 10
           periodSeconds: 5
+          successThreshold: 1
           timeoutSeconds: 3
+        resources:
+          limits:
+            cpu: "1"
+            memory: 2Gi
+          requests:
+            cpu: 250m
+            memory: 512Mi
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /var/lib/mysql
+          name: mariadb-data
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+  updateStrategy:
+    rollingUpdate:
+      partition: 0
+    type: RollingUpdate
   volumeClaimTemplates:
-  - metadata:
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      creationTimestamp: null
       name: mariadb-data
     spec:
       accessModes:
       - ReadWriteOnce
-      storageClassName: local-path
       resources:
         requests:
           storage: 10Gi
-  persistentVolumeClaimRetentionPolicy:
-    whenDeleted: Retain
-    whenScaled: Retain
-  volumes:
-  - name: mariadb-config
-    configMap:
-      name: mariadb-config
-
+      storageClassName: local-path
+      volumeMode: Filesystem
+    status:
+      phase: Pending
+status:
+  availableReplicas: 1
+  collisionCount: 0
+  currentReplicas: 1
+  currentRevision: mariadb-7bb5646698
+  observedGeneration: 1
+  readyReplicas: 1
+  replicas: 1
+  updateRevision: mariadb-7bb5646698
+  updatedReplicas: 1

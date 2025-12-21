@@ -1,3 +1,4 @@
+kind: List
 # ORISO Backend Services - Production Deployment
 # This file deploys backend services using pre-built Docker images
 # Uses ConfigMaps and Secrets - NO hardcoded values
