@@ -1,10 +1,10 @@
 #!/bin/bash
 
-SIGNOZ_COLLECTOR="http://10.43.219.37:4318"  # HTTP endpoint (caritas namespace)
+SIGNOZ_COLLECTOR="http://10.43.196.88:4318"  # HTTP endpoint (caritas namespace)
 
 echo "🚀 Caritas Service Monitor → SigNoz (ORISO)"
 echo "=================================================="
-echo "Monitoring 4 ORISO services every 10 seconds..."
+echo "Monitoring 6 ORISO services every 10 seconds..."
 echo "Sending data to SigNoz at $SIGNOZ_COLLECTOR"
 echo "=================================================="
 
@@ -13,13 +13,13 @@ while true; do
     echo ""
     echo "[$(date +"%H:%M:%S")] Checking ORISO services..."
     
-    # Check each service (removed liveservice)
-    for service_info in "8081:tenantservice" "8082:userservice" "8083:consultingtypeservice" "8084:agencyservice"; do
-        IFS=":" read -r port name <<< "$service_info"
+    # Check each service
+    for service_info in "8081:tenantservice:/actuator/health" "8082:userservice:/actuator/health" "8083:consultingtypeservice:/actuator/health" "8084:agencyservice:/actuator/health" "8086:liveservice:/actuator/health" "8008:matrix-synapse:/_matrix/client/versions"; do
+        IFS=":" read -r port name path <<< "$service_info"
         
         # Measure response time
         start_ms=$(date +%s%3N)
-        http_code=$(curl -s -o /dev/null -w "%{http_code}" -m 5 http://127.0.0.1:$port/actuator/health 2>/dev/null || echo "000")
+        http_code=$(curl -s -o /dev/null -w "%{http_code}" -m 5 http://127.0.0.1:$port$path 2>/dev/null || echo "000")
         end_ms=$(date +%s%3N)
         response_time=$((end_ms - start_ms))
         
@@ -43,7 +43,7 @@ while true; do
     "resource": {
       "attributes": [{
         "key": "service.name",
-        "value": {"stringValue": "caritas-monitor"}
+        "value": {"stringValue": "$name"}
       }]
     },
     "scopeMetrics": [{

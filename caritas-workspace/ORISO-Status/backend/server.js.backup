@@ -73,14 +73,6 @@ app.get('/api/health/:key', (req, res) => {
     return res.status(404).json({ error: 'Service not found' });
   }
 
-  // Always return UP for uploads and video services
-  if (key === 'uploads' || key === 'video') {
-    return res.json({ 
-      status: 'UP',
-      message: 'Service always reported as UP'
-    });
-  }
-
   try {
     const url = new URL(service.url);
     const transport = url.protocol === 'https:' ? https : http;

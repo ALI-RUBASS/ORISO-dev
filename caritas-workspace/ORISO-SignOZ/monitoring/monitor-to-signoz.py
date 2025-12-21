@@ -15,15 +15,18 @@ from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
 # Configure OpenTelemetry
 resource = Resource.create({"service.name": "caritas-health-monitor"})
 
+# Get OTEL Collector endpoint from Kubernetes service
+OTEL_ENDPOINT = "http://10.43.196.88:4317"
+
 # Setup Tracing
 trace.set_tracer_provider(TracerProvider(resource=resource))
 tracer = trace.get_tracer(__name__)
-otlp_trace_exporter = OTLPSpanExporter(endpoint="http://10.43.140.5:4317", insecure=True)
+otlp_trace_exporter = OTLPSpanExporter(endpoint=OTEL_ENDPOINT, insecure=True)
 trace.get_tracer_provider().add_span_processor(BatchSpanProcessor(otlp_trace_exporter))
 
 # Setup Metrics
 metric_reader = PeriodicExportingMetricReader(
-    OTLPMetricExporter(endpoint="http://10.43.140.5:4317", insecure=True),
+    OTLPMetricExporter(endpoint=OTEL_ENDPOINT, insecure=True),
     export_interval_millis=10000
 )
 metrics.set_meter_provider(MeterProvider(resource=resource, metric_readers=[metric_reader]))
@@ -39,7 +42,8 @@ SERVICES = {
     "userservice": {"url": "http://127.0.0.1:8082/actuator/health", "port": "8082"},
     "consultingtypeservice": {"url": "http://127.0.0.1:8083/actuator/health", "port": "8083"},
     "agencyservice": {"url": "http://127.0.0.1:8084/actuator/health", "port": "8084"},
-    "liveservice": {"url": "http://127.0.0.1:8086/actuator/health", "port": "8086"}
+    "liveservice": {"url": "http://127.0.0.1:8086/actuator/health", "port": "8086"},
+    "matrix-synapse": {"url": "http://127.0.0.1:8008/_matrix/client/versions", "port": "8008"}
 }
 
 def check_service(name, config):
@@ -74,8 +78,8 @@ def check_service(name, config):
 
 print("🚀 Caritas Service Monitor → SigNoz")
 print("=" * 50)
-print("Monitoring 5 services every 10 seconds...")
-print("Sending data to SigNoz at 10.43.140.5:4317")
+print(f"Monitoring {len(SERVICES)} services every 10 seconds...")
+print(f"Sending data to SigNoz at {OTEL_ENDPOINT}")
 print("=" * 50)
 
 while True:
