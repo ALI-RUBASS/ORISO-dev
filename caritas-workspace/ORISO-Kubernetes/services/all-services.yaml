@@ -85,23 +85,6 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  labels:
-    app: cob-proxy
-  name: cob-proxy
-  namespace: caritas
-spec:
-  ports:
-  - port: 8089
-    protocol: TCP
-    targetPort: 8089
-  selector:
-    app: cob-proxy
-  sessionAffinity: None
-  type: ClusterIP
----
-apiVersion: v1
-kind: Service
-metadata:
   name: consultingtypeservice
   namespace: caritas
 spec:
@@ -174,19 +157,6 @@ spec:
     targetPort: 9100
   selector:
     app: health-dashboard
-  sessionAffinity: None
-  type: ClusterIP
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: host-nginx-proxy
-  namespace: caritas
-spec:
-  ports:
-  - port: 8089
-    protocol: TCP
-    targetPort: 8089
   sessionAffinity: None
   type: ClusterIP
 ---
@@ -892,4 +862,4 @@ spec:
   selector:
     app: videoservice
   sessionAffinity: None
-    type: NodePort
+  type: NodePort
