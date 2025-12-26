@@ -1,4 +1,4 @@
-FROM adoptopenjdk/openjdk11
+FROM eclipse-temurin:11-jre
 VOLUME ["/tmp","/log"]
 EXPOSE 8080
 ARG JAR_FILE

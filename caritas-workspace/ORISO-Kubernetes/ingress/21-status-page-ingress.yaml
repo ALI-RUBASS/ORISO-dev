@@ -25,3 +25,4 @@ spec:
     - status.oriso-dev.site
     secretName: status-oriso-site-tls
 
+

@@ -25,3 +25,4 @@ spec:
     - signoz.oriso-dev.site
     secretName: signoz-oriso-site-tls
 
+

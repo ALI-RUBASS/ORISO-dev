@@ -25,3 +25,4 @@ spec:
     - admin.oriso-dev.site
     secretName: admin-oriso-site-tls
 
+
