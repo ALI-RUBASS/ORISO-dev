@@ -1,6 +1,107 @@
 # ORISO Platform Helm Charts
 
-This directory contains all Helm charts for the ORISO platform, organized for production-ready deployment on managed Kubernetes clusters.
+Complete Helm chart deployment for the ORISO platform.
+
+## 📋 Prerequisites
+
+### Required Components
+
+1. **Kubernetes Cluster** (1.24+)
+   ```bash
+   kubectl version --client
+   kubectl get nodes
+   ```
+
+2. **Helm 3.x**
+   ```bash
+   helm version
+   # Install: curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+   ```
+
+3. **Nginx Ingress Controller**
+   ```bash
+   kubectl get ingressclass nginx
+   kubectl get pods -n ingress-nginx
+   ```
+
+4. **Cert-Manager** (for TLS certificates)
+   ```bash
+   kubectl get clusterissuer letsencrypt-prod
+   ```
+
+5. **Storage Class** (for persistent volumes)
+   ```bash
+   kubectl get storageclass
+   ```
+
+6. **Kubernetes Secrets** (create before deployment)
+   ```bash
+   kubectl create namespace caritas
+   
+   # MariaDB
+   kubectl create secret generic mariadb-secrets -n caritas \
+     --from-literal=MYSQL_ROOT_PASSWORD=your-password \
+     --from-literal=MYSQL_DATABASE=caritas
+   
+   # Redis
+   kubectl create secret generic redis-secret -n caritas \
+     --from-literal=password=your-password
+   
+   # RabbitMQ
+   kubectl create secret generic rabbitmq-secrets -n caritas \
+     --from-literal=RABBITMQ_DEFAULT_USER=admin \
+     --from-literal=RABBITMQ_DEFAULT_PASS=admin
+   ```
+
+7. **DNS Records** (point to Ingress Controller IP)
+   - `api.oriso-dev.site`
+   - `app.oriso-dev.site`
+   - `admin.oriso-dev.site`
+   - `auth.oriso-dev.site`
+   - `matrix.oriso-dev.site`
+   - And other subdomains as needed
+
+## 🚀 Quick Start
+
+### Deploy Everything (Recommended)
+
+```bash
+cd caritas-workspace/ORISO-Kubernetes/helm
+
+# Update chart dependencies
+cd oriso-platform
+helm dependency update
+cd ..
+
+# Deploy
+helm install oriso-platform ./oriso-platform \
+  --namespace caritas \
+  --create-namespace \
+  -f values.yaml
+```
+
+### Deploy Individual Services
+
+```bash
+# Infrastructure
+helm install mariadb ./charts/mariadb --namespace caritas
+helm install mongodb ./charts/mongodb --namespace caritas
+helm install redis ./charts/redis --namespace caritas
+helm install rabbitmq ./charts/rabbitmq --namespace caritas
+
+# Authentication
+helm install keycloak ./charts/keycloak --namespace caritas -f values.yaml
+
+# Backend Services
+helm install userservice ./charts/userservice --namespace caritas -f values.yaml
+helm install agencyservice ./charts/agencyservice --namespace caritas -f values.yaml
+helm install tenantservice ./charts/tenantservice --namespace caritas -f values.yaml
+helm install consultingtypeservice ./charts/consultingtypeservice --namespace caritas -f values.yaml
+
+# Frontend
+helm install frontend ./charts/frontend --namespace caritas -f values.yaml
+helm install admin ./charts/admin --namespace caritas -f values.yaml
+```
 
 ## 📁 Structure
 
@@ -14,185 +115,136 @@ helm/
 │   ├── userservice/         # User management service
 │   ├── tenantservice/       # Tenant management service
 │   ├── consultingtypeservice/ # Consulting type service
-│   ├── status-page/         # System status page
-│   ├── health-dashboard/    # Health monitoring dashboard
 │   ├── keycloak/            # Identity and access management
 │   ├── mariadb/             # MariaDB StatefulSet
 │   ├── mongodb/             # MongoDB deployment
 │   ├── redis/               # Redis cache
 │   ├── rabbitmq/            # RabbitMQ message broker
-│   ├── matrix-synapse/      # Matrix Synapse server
+│   ├── matrix-synapse/       # Matrix Synapse server
 │   ├── livekit/             # LiveKit WebRTC server
-│   └── element/             # Element Matrix client
-└── README.md                # This file
+│   └── ...                  # Other services
+└── oriso-platform/          # Master umbrella chart
+    ├── Chart.yaml           # Chart dependencies
+    ├── values.yaml          # Master values
+    └── charts/              # Packaged sub-charts
 ```
 
-## 🎯 Global Values
+## 🔧 Configuration
 
-The `values.yaml` file at the root contains all shared configuration:
+### Global Values
+
+The `values.yaml` file contains shared configuration:
 
 - **Domains**: All external domains (api, app, auth, matrix, etc.)
-- **Keycloak**: JWT validation URLs (external for managed clusters)
+- **Keycloak**: JWT validation URLs
 - **Matrix**: Server name and URLs
-- **CORS**: Cross-origin resource sharing configuration
+- **CORS**: Cross-origin resource sharing
 - **Databases**: Internal Kubernetes DNS for all databases
 - **Services**: Internal Kubernetes DNS for all services
 
-## 📦 Deployment
+### Service URLs
 
-### Prerequisites
+All services use Kubernetes DNS with `oriso-platform-` prefix:
 
-1. **Kubernetes cluster** (managed or self-hosted)
-2. **Helm 3.x** installed
-3. **kubectl** configured to access your cluster
-4. **Secrets** created (passwords, tokens, etc.)
-
-### Deploy Individual Services
-
-```bash
-# Deploy Keycloak
-helm install keycloak ./charts/keycloak \
-  --namespace caritas \
-  --set global.domains.auth=auth.oriso-dev.site
-
-# Deploy MariaDB
-helm install mariadb ./charts/mariadb \
-  --namespace caritas
-
-# Deploy MongoDB
-helm install mongodb ./charts/mongodb \
-  --namespace caritas
-
-# Deploy Redis
-helm install redis ./charts/redis \
-  --namespace caritas
-
-# Deploy RabbitMQ
-helm install rabbitmq ./charts/rabbitmq \
-  --namespace caritas
-
-# Deploy Matrix Synapse
-helm install matrix-synapse ./charts/matrix-synapse \
-  --namespace caritas \
-  --set global.matrix.serverName=oriso-dev.site
-
-# Deploy LiveKit
-helm install livekit ./charts/livekit \
-  --namespace caritas
-
-# Deploy Element
-helm install element ./charts/element \
-  --namespace caritas
-
-# Deploy Frontend
-helm install frontend ./charts/frontend \
-  --namespace caritas \
-  -f values.yaml
-
-# Deploy Admin
-helm install admin ./charts/admin \
-  --namespace caritas \
-  -f values.yaml
-
-# Deploy Backend Services
-helm install agencyservice ./charts/agencyservice \
-  --namespace caritas \
-  -f values.yaml
-
-helm install userservice ./charts/userservice \
-  --namespace caritas \
-  -f values.yaml
-
-helm install tenantservice ./charts/tenantservice \
-  --namespace caritas \
-  -f values.yaml
-
-helm install consultingtypeservice ./charts/consultingtypeservice \
-  --namespace caritas \
-  -f values.yaml
-```
-
-### Using Global Values
-
-When deploying with global values, pass the `values.yaml` file:
-
-```bash
-helm install <service> ./charts/<service> \
-  --namespace caritas \
-  -f ../values.yaml
-```
-
-This ensures all services use consistent domain names and configuration.
-
-## 🔧 Configuration
+- `http://oriso-platform-userservice.caritas.svc.cluster.local:8082`
+- `http://oriso-platform-agencyservice.caritas.svc.cluster.local:8084`
+- `http://oriso-platform-consultingtypeservice.caritas.svc.cluster.local:8083`
+- `http://oriso-platform-tenantservice.caritas.svc.cluster.local:8081`
 
 ### Environment-Specific Values
 
 Create environment-specific value files:
 
-- `values-dev.yaml` - Development environment
-- `values-staging.yaml` - Staging environment
-- `values-prod.yaml` - Production environment
-
-Example `values-prod.yaml`:
-
 ```yaml
+# values-prod.yaml
 global:
   domains:
     api: "api.oriso.com"
     app: "app.oriso.com"
     auth: "auth.oriso.com"
-    matrix: "matrix.oriso.com"
 ```
 
 Deploy with:
-
 ```bash
-helm install frontend ./charts/frontend \
+helm install oriso-platform ./oriso-platform \
   --namespace caritas \
   -f values.yaml \
   -f values-prod.yaml
 ```
 
-## 🔐 Secrets
+## 🔄 Upgrade
 
-All sensitive data (passwords, tokens, API keys) should be stored in Kubernetes Secrets, not in `values.yaml`.
+```bash
+cd caritas-workspace/ORISO-Kubernetes/helm
 
-### Required Secrets
+# Update dependencies
+cd oriso-platform
+helm dependency update
+cd ..
 
-- `mariadb-secrets` - MariaDB root password and database name
-- `mongodb-secrets` - MongoDB credentials (if needed)
-- `redis-secret` - Redis password
-- `rabbitmq-secrets` - RabbitMQ default user and password
-- `keycloak-secrets` - Keycloak admin password
-- Service-specific secrets (e.g., `agencyservice-secrets`)
+# Upgrade
+helm upgrade oriso-platform ./oriso-platform \
+  --namespace caritas \
+  -f values.yaml
+```
 
-## 📝 Notes
+## 🗑️ Uninstall
 
-1. **Global Values**: Charts check for `global.*` values and use them if available, otherwise fall back to chart-specific defaults.
+```bash
+helm uninstall oriso-platform --namespace caritas
+```
 
-2. **DNS Names**: All internal service communication uses full Kubernetes DNS names (e.g., `mariadb.caritas.svc.cluster.local:3306`).
+**Note:** Persistent volumes are retained by default.
 
-3. **External URLs**: For managed clusters, JWT validation uses external URLs (e.g., `https://auth.oriso-dev.site`) to match token issuers.
+## ✅ Verification
 
-4. **Ingress**: Ingress resources are kept as separate YAML files (not Helm templates) for simplicity.
+```bash
+# Check all pods
+kubectl get pods -n caritas
 
-5. **StatefulSets**: MariaDB uses a StatefulSet for persistent storage.
+# Check services
+kubectl get svc -n caritas
 
-6. **PVCs**: Some charts reference existing PVCs (e.g., `mongodb-storage`, `matrix-synapse-data`). Create these before deploying if they don't exist.
+# Check Helm release
+helm list -n caritas
+helm status oriso-platform -n caritas
+```
 
-## 🚀 Next Steps
+## 🐛 Troubleshooting
 
-1. Review and customize `values.yaml` for your environment
-2. Create all required Secrets
-3. Deploy infrastructure services first (databases, message brokers)
-4. Deploy backend services
-5. Deploy frontend services
-6. Apply Ingress resources
+### Pods Not Starting
 
-## 📚 References
+```bash
+# Check pod status
+kubectl get pods -n caritas
 
-- [Helm Documentation](https://helm.sh/docs/)
-- [Kubernetes Documentation](https://kubernetes.io/docs/)
-- [ORISO Platform Documentation](../README.md)
+# Check logs
+kubectl logs -n caritas <pod-name>
 
+# Check events
+kubectl describe pod -n caritas <pod-name>
+```
+
+### Database Connection Issues
+
+```bash
+# Verify database pods
+kubectl get pods -n caritas -l app=mariadb
+kubectl get pods -n caritas -l app=mongodb
+
+# Check database logs
+kubectl logs -n caritas -l app=mariadb
+```
+
+### Service Communication Issues
+
+Verify service URLs use correct DNS names:
+```bash
+# Check service environment variables
+kubectl exec -n caritas <pod-name> -- env | grep SERVICE
+```
+
+## 📚 Related Documentation
+
+- [Ingress Configuration](../ingress/README.md)
+- [Main Kubernetes README](../README.md)
