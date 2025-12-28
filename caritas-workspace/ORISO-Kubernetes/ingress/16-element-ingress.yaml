@@ -17,7 +17,7 @@ spec:
         pathType: Prefix
         backend:
           service:
-            name: element
+            name: oriso-platform-element
             port:
               number: 8087
   tls:

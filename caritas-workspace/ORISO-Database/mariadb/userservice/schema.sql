@@ -1,4 +1,9 @@
 /*M!999999\- enable the sandbox mode */ 
+-- MariaDB dump 10.19  Distrib 10.11.15-MariaDB, for debian-linux-gnu (x86_64)
+--
+-- Host: localhost    Database: userservice
+-- ------------------------------------------------------
+-- Server version	10.11.15-MariaDB-ubu2204
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -10,28 +15,100 @@
 /*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
 /*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
+
+--
+-- Sequence structure for `sequence_admin_agency`
+--
+
+DROP SEQUENCE IF EXISTS `sequence_admin_agency`;
 CREATE SEQUENCE `sequence_admin_agency` start with 0 minvalue 0 maxvalue 9223372036854775806 increment by 1 cache 100 nocycle ENGINE=InnoDB;
 DO SETVAL(`sequence_admin_agency`, 100000, 0);
+
+--
+-- Sequence structure for `sequence_chat`
+--
+
+DROP SEQUENCE IF EXISTS `sequence_chat`;
 CREATE SEQUENCE `sequence_chat` start with 0 minvalue 0 maxvalue 9223372036854775806 increment by 1 cache 100 nocycle ENGINE=InnoDB;
-DO SETVAL(`sequence_chat`, 100, 0);
+DO SETVAL(`sequence_chat`, 400, 0);
+
+--
+-- Sequence structure for `sequence_chat_agency`
+--
+
+DROP SEQUENCE IF EXISTS `sequence_chat_agency`;
 CREATE SEQUENCE `sequence_chat_agency` start with 0 minvalue 0 maxvalue 9223372036854775806 increment by 1 cache 100 nocycle ENGINE=InnoDB;
-DO SETVAL(`sequence_chat_agency`, 0, 0);
+DO SETVAL(`sequence_chat_agency`, 300, 0);
+
+--
+-- Sequence structure for `sequence_consultant_agency`
+--
+
+DROP SEQUENCE IF EXISTS `sequence_consultant_agency`;
 CREATE SEQUENCE `sequence_consultant_agency` start with 0 minvalue 0 maxvalue 9223372036854775806 increment by 1 cache 100 nocycle ENGINE=InnoDB;
-DO SETVAL(`sequence_consultant_agency`, 100200, 0);
+DO SETVAL(`sequence_consultant_agency`, 100500, 0);
+
+--
+-- Sequence structure for `sequence_consultant_mobile_token`
+--
+
+DROP SEQUENCE IF EXISTS `sequence_consultant_mobile_token`;
 CREATE SEQUENCE `sequence_consultant_mobile_token` start with 0 minvalue 0 maxvalue 9223372036854775806 increment by 1 cache 100 nocycle ENGINE=InnoDB;
 DO SETVAL(`sequence_consultant_mobile_token`, 0, 0);
+
+--
+-- Sequence structure for `sequence_session`
+--
+
+DROP SEQUENCE IF EXISTS `sequence_session`;
 CREATE SEQUENCE `sequence_session` start with 0 minvalue 0 maxvalue 9223372036854775806 increment by 1 cache 100 nocycle ENGINE=InnoDB;
-DO SETVAL(`sequence_session`, 100500, 0);
+DO SETVAL(`sequence_session`, 102000, 0);
+
+--
+-- Sequence structure for `sequence_session_data`
+--
+
+DROP SEQUENCE IF EXISTS `sequence_session_data`;
 CREATE SEQUENCE `sequence_session_data` start with 0 minvalue 0 maxvalue 9223372036854775806 increment by 1 cache 100 nocycle ENGINE=InnoDB;
 DO SETVAL(`sequence_session_data`, 100, 0);
+
+--
+-- Sequence structure for `sequence_session_topic`
+--
+
+DROP SEQUENCE IF EXISTS `sequence_session_topic`;
 CREATE SEQUENCE `sequence_session_topic` start with 0 minvalue 0 maxvalue 9223372036854775806 increment by 1 cache 10 nocycle ENGINE=InnoDB;
 DO SETVAL(`sequence_session_topic`, 100000, 0);
+
+--
+-- Sequence structure for `sequence_user_agency`
+--
+
+DROP SEQUENCE IF EXISTS `sequence_user_agency`;
 CREATE SEQUENCE `sequence_user_agency` start with 0 minvalue 0 maxvalue 9223372036854775806 increment by 1 cache 100 nocycle ENGINE=InnoDB;
 DO SETVAL(`sequence_user_agency`, 100, 0);
+
+--
+-- Sequence structure for `sequence_user_chat`
+--
+
+DROP SEQUENCE IF EXISTS `sequence_user_chat`;
 CREATE SEQUENCE `sequence_user_chat` start with 0 minvalue 0 maxvalue 9223372036854775806 increment by 1 cache 10 nocycle ENGINE=InnoDB;
 DO SETVAL(`sequence_user_chat`, 0, 0);
+
+--
+-- Sequence structure for `sequence_user_mobile_token`
+--
+
+DROP SEQUENCE IF EXISTS `sequence_user_mobile_token`;
 CREATE SEQUENCE `sequence_user_mobile_token` start with 0 minvalue 0 maxvalue 9223372036854775806 increment by 1 cache 100 nocycle ENGINE=InnoDB;
 DO SETVAL(`sequence_user_mobile_token`, 0, 0);
+
+--
+-- Table structure for table `DATABASECHANGELOG`
+--
+
+DROP TABLE IF EXISTS `DATABASECHANGELOG`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `DATABASECHANGELOG` (
@@ -51,6 +128,12 @@ CREATE TABLE `DATABASECHANGELOG` (
   `DEPLOYMENT_ID` varchar(10) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `DATABASECHANGELOGLOCK`
+--
+
+DROP TABLE IF EXISTS `DATABASECHANGELOGLOCK`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `DATABASECHANGELOGLOCK` (
@@ -61,6 +144,12 @@ CREATE TABLE `DATABASECHANGELOGLOCK` (
   PRIMARY KEY (`ID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `admin`
+--
+
+DROP TABLE IF EXISTS `admin`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `admin` (
@@ -80,6 +169,12 @@ CREATE TABLE `admin` (
   UNIQUE KEY `idx_username_first_name_last_name_email` (`username`,`first_name`,`last_name`,`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `admin_agency`
+--
+
+DROP TABLE IF EXISTS `admin_agency`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `admin_agency` (
@@ -93,6 +188,12 @@ CREATE TABLE `admin_agency` (
   CONSTRAINT `admin_agency_ibfk_1` FOREIGN KEY (`admin_id`) REFERENCES `admin` (`admin_id`) ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `appointment`
+--
+
+DROP TABLE IF EXISTS `appointment`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `appointment` (
@@ -107,6 +208,12 @@ CREATE TABLE `appointment` (
   CONSTRAINT `appointment_consultant_constraint` FOREIGN KEY (`consultant_id`) REFERENCES `consultant` (`consultant_id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `chat`
+--
+
+DROP TABLE IF EXISTS `chat`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `chat` (
@@ -125,6 +232,7 @@ CREATE TABLE `chat` (
   `update_date` datetime NOT NULL DEFAULT utc_timestamp(),
   `create_date` datetime NOT NULL DEFAULT utc_timestamp(),
   `hint_message` varchar(300) DEFAULT NULL,
+  `matrix_room_id` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `consultant_id_owner` (`consultant_id_owner`),
   CONSTRAINT `chat_consultant_ibfk_1` FOREIGN KEY (`consultant_id_owner`) REFERENCES `consultant` (`consultant_id`) ON UPDATE CASCADE
@@ -147,6 +255,12 @@ DELIMITER ;
 /*!50003 SET character_set_client  = @saved_cs_client */ ;
 /*!50003 SET character_set_results = @saved_cs_results */ ;
 /*!50003 SET collation_connection  = @saved_col_connection */ ;
+
+--
+-- Table structure for table `chat_agency`
+--
+
+DROP TABLE IF EXISTS `chat_agency`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `chat_agency` (
@@ -177,6 +291,12 @@ DELIMITER ;
 /*!50003 SET character_set_client  = @saved_cs_client */ ;
 /*!50003 SET character_set_results = @saved_cs_results */ ;
 /*!50003 SET collation_connection  = @saved_col_connection */ ;
+
+--
+-- Table structure for table `consultant`
+--
+
+DROP TABLE IF EXISTS `consultant`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `consultant` (
@@ -229,6 +349,12 @@ DELIMITER ;
 /*!50003 SET character_set_client  = @saved_cs_client */ ;
 /*!50003 SET character_set_results = @saved_cs_results */ ;
 /*!50003 SET collation_connection  = @saved_col_connection */ ;
+
+--
+-- Table structure for table `consultant_agency`
+--
+
+DROP TABLE IF EXISTS `consultant_agency`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `consultant_agency` (
@@ -262,6 +388,12 @@ DELIMITER ;
 /*!50003 SET character_set_client  = @saved_cs_client */ ;
 /*!50003 SET character_set_results = @saved_cs_results */ ;
 /*!50003 SET collation_connection  = @saved_col_connection */ ;
+
+--
+-- Table structure for table `consultant_mobile_token`
+--
+
+DROP TABLE IF EXISTS `consultant_mobile_token`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `consultant_mobile_token` (
@@ -294,6 +426,30 @@ DELIMITER ;
 /*!50003 SET character_set_client  = @saved_cs_client */ ;
 /*!50003 SET character_set_results = @saved_cs_results */ ;
 /*!50003 SET collation_connection  = @saved_col_connection */ ;
+
+--
+-- Table structure for table `group_chat_participant`
+--
+
+DROP TABLE IF EXISTS `group_chat_participant`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `group_chat_participant` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `chat_id` bigint(20) unsigned NOT NULL,
+  `consultant_id` varchar(36) NOT NULL,
+  `joined_at` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_chat_consultant` (`chat_id`,`consultant_id`),
+  KEY `idx_consultant` (`consultant_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=279 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `language`
+--
+
+DROP TABLE IF EXISTS `language`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `language` (
@@ -303,6 +459,12 @@ CREATE TABLE `language` (
   CONSTRAINT `language_id_consultant_constraint` FOREIGN KEY (`consultant_id`) REFERENCES `consultant` (`consultant_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `session`
+--
+
+DROP TABLE IF EXISTS `session`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `session` (
@@ -372,6 +534,12 @@ DELIMITER ;
 /*!50003 SET character_set_client  = @saved_cs_client */ ;
 /*!50003 SET character_set_results = @saved_cs_results */ ;
 /*!50003 SET collation_connection  = @saved_col_connection */ ;
+
+--
+-- Table structure for table `session_data`
+--
+
+DROP TABLE IF EXISTS `session_data`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `session_data` (
@@ -405,6 +573,12 @@ DELIMITER ;
 /*!50003 SET character_set_client  = @saved_cs_client */ ;
 /*!50003 SET character_set_results = @saved_cs_results */ ;
 /*!50003 SET collation_connection  = @saved_col_connection */ ;
+
+--
+-- Table structure for table `session_topic`
+--
+
+DROP TABLE IF EXISTS `session_topic`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `session_topic` (
@@ -418,6 +592,12 @@ CREATE TABLE `session_topic` (
   CONSTRAINT `session_topic_ibfk_1` FOREIGN KEY (`session_id`) REFERENCES `session` (`id`) ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `user`
+--
+
+DROP TABLE IF EXISTS `user`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `user` (
@@ -460,6 +640,12 @@ DELIMITER ;
 /*!50003 SET character_set_client  = @saved_cs_client */ ;
 /*!50003 SET character_set_results = @saved_cs_results */ ;
 /*!50003 SET collation_connection  = @saved_col_connection */ ;
+
+--
+-- Table structure for table `user_agency`
+--
+
+DROP TABLE IF EXISTS `user_agency`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `user_agency` (
@@ -490,6 +676,12 @@ DELIMITER ;
 /*!50003 SET character_set_client  = @saved_cs_client */ ;
 /*!50003 SET character_set_results = @saved_cs_results */ ;
 /*!50003 SET collation_connection  = @saved_col_connection */ ;
+
+--
+-- Table structure for table `user_chat`
+--
+
+DROP TABLE IF EXISTS `user_chat`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `user_chat` (
@@ -505,6 +697,12 @@ CREATE TABLE `user_chat` (
   CONSTRAINT `chat_user_ibfk_2` FOREIGN KEY (`chat_id`) REFERENCES `chat` (`id`) ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `user_mobile_token`
+--
+
+DROP TABLE IF EXISTS `user_mobile_token`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `user_mobile_token` (
@@ -537,6 +735,14 @@ DELIMITER ;
 /*!50003 SET character_set_client  = @saved_cs_client */ ;
 /*!50003 SET character_set_results = @saved_cs_results */ ;
 /*!50003 SET collation_connection  = @saved_col_connection */ ;
+
+--
+-- Dumping events for database 'userservice'
+--
+
+--
+-- Dumping routines for database 'userservice'
+--
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
@@ -547,3 +753,4 @@ DELIMITER ;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
+-- Dump completed on 2025-12-26  2:51:47

@@ -12,16 +12,16 @@ data:
   # MongoDB Configuration - Use full Kubernetes DNS FQDN (required for managed clusters)
   SPRING_DATA_MONGODB_URI: {{ .Values.mongodb.uri | quote }}
   
-  # Keycloak Configuration - Use full Kubernetes DNS FQDN (required for managed clusters)
-  KEYCLOAK_AUTH_SERVER_URL: {{ .Values.keycloak.authServerUrl | quote }}
-  KEYCLOAK_REALM: {{ .Values.keycloak.realm | quote }}
-  SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: {{ .Values.keycloak.jwt.issuerUri | quote }}
-  SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: {{ .Values.keycloak.jwt.jwkSetUri | quote }}
-  IDENTITY_OPENID_CONNECT_URL: {{ .Values.keycloak.identity.openIdConnectUrl | quote }}
+  # Keycloak Configuration - Use global values if available, otherwise chart values
+  KEYCLOAK_AUTH_SERVER_URL: {{ if and .Values.global .Values.global.keycloak .Values.global.keycloak.internalUrl }}{{ .Values.global.keycloak.internalUrl | quote }}{{ else }}{{ .Values.keycloak.authServerUrl | quote }}{{ end }}
+  KEYCLOAK_REALM: {{ if and .Values.global .Values.global.keycloak .Values.global.keycloak.realm }}{{ .Values.global.keycloak.realm | quote }}{{ else }}{{ .Values.keycloak.realm | quote }}{{ end }}
+  SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: {{ if and .Values.global .Values.global.keycloak .Values.global.keycloak.jwt .Values.global.keycloak.jwt.issuerUri }}{{ .Values.global.keycloak.jwt.issuerUri | quote }}{{ else }}{{ .Values.keycloak.jwt.issuerUri | quote }}{{ end }}
+  SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: {{ if and .Values.global .Values.global.keycloak .Values.global.keycloak.jwt .Values.global.keycloak.jwt.jwkSetUri }}{{ .Values.global.keycloak.jwt.jwkSetUri | quote }}{{ else }}{{ .Values.keycloak.jwt.jwkSetUri | quote }}{{ end }}
+  IDENTITY_OPENID_CONNECT_URL: {{ if and .Values.global .Values.global.keycloak .Values.global.keycloak.internalUrl }}{{ printf "%s/realms/%s/protocol/openid-connect" .Values.global.keycloak.internalUrl (default .Values.keycloak.realm .Values.global.keycloak.realm) | quote }}{{ else }}{{ .Values.keycloak.identity.openIdConnectUrl | quote }}{{ end }}
   
-  # Matrix Configuration - Use full Kubernetes DNS FQDN (required for managed clusters)
-  MATRIX_API_URL: {{ .Values.matrix.apiUrl | quote }}
-  MATRIX_SERVER_NAME: {{ .Values.matrix.serverName | quote }}
+  # Matrix Configuration - Use global values if available, otherwise chart values
+  MATRIX_API_URL: {{ if and .Values.global .Values.global.matrix .Values.global.matrix.internalUrl }}{{ .Values.global.matrix.internalUrl | quote }}{{ else }}{{ .Values.matrix.apiUrl | quote }}{{ end }}
+  MATRIX_SERVER_NAME: {{ if and .Values.global .Values.global.matrix .Values.global.matrix.serverName }}{{ .Values.global.matrix.serverName | quote }}{{ else }}{{ .Values.matrix.serverName | quote }}{{ end }}
   MATRIX_MIGRATION_ENABLED: {{ .Values.matrix.migrationEnabled | quote }}
   
   # RabbitMQ Configuration - Use full Kubernetes DNS FQDN (required for managed clusters)
@@ -60,8 +60,13 @@ data:
     
     # ---------------- Server ----------------
     server.port=8082
-    server.host=http://localhost
-    app.base.url=http://localhost:8082
+    {{- if and .Values.global .Values.global.domains .Values.global.domains.api }}
+    server.host=https://{{ .Values.global.domains.api }}
+    app.base.url=https://{{ .Values.global.domains.api }}
+    {{- else }}
+    server.host=http://oriso-platform-userservice.caritas.svc.cluster.local:8082
+    app.base.url=http://oriso-platform-userservice.caritas.svc.cluster.local:8082
+    {{- end }}
     
     # Tomcat thread pool - Scaled for 5000 concurrent users
     server.tomcat.threads.max=1000
@@ -80,17 +85,17 @@ data:
     spring.data.mongodb.uri={{ .Values.mongodb.uri }}
     
     # ---------------- Keycloak ----------------
-    keycloak.auth-server-url={{ .Values.keycloak.authServerUrl }}
-    keycloak.realm={{ .Values.keycloak.realm }}
-    spring.security.oauth2.resourceserver.jwt.issuer-uri={{ .Values.keycloak.jwt.issuerUri }}
-    spring.security.oauth2.resourceserver.jwt.jwk-set-uri={{ .Values.keycloak.jwt.jwkSetUri }}
-    identity.openid-connect-url={{ .Values.keycloak.identity.openIdConnectUrl }}
+    keycloak.auth-server-url={{ if and .Values.global .Values.global.keycloak .Values.global.keycloak.internalUrl }}{{ .Values.global.keycloak.internalUrl }}{{ else }}{{ .Values.keycloak.authServerUrl }}{{ end }}
+    keycloak.realm={{ if and .Values.global .Values.global.keycloak .Values.global.keycloak.realm }}{{ .Values.global.keycloak.realm }}{{ else }}{{ .Values.keycloak.realm }}{{ end }}
+    spring.security.oauth2.resourceserver.jwt.issuer-uri={{ if and .Values.global .Values.global.keycloak .Values.global.keycloak.jwt .Values.global.keycloak.jwt.issuerUri }}{{ .Values.global.keycloak.jwt.issuerUri }}{{ else }}{{ .Values.keycloak.jwt.issuerUri }}{{ end }}
+    spring.security.oauth2.resourceserver.jwt.jwk-set-uri={{ if and .Values.global .Values.global.keycloak .Values.global.keycloak.jwt .Values.global.keycloak.jwt.jwkSetUri }}{{ .Values.global.keycloak.jwt.jwkSetUri }}{{ else }}{{ .Values.keycloak.jwt.jwkSetUri }}{{ end }}
+    identity.openid-connect-url={{- if and .Values.global .Values.global.keycloak .Values.global.keycloak.internalUrl -}}{{ printf "%s/realms/%s/protocol/openid-connect" .Values.global.keycloak.internalUrl (default .Values.keycloak.realm .Values.global.keycloak.realm) }}{{- else -}}{{ .Values.keycloak.identity.openIdConnectUrl }}{{- end }}
     
     # ---------------- Matrix ----------------
-    matrix.apiUrl={{ .Values.matrix.apiUrl }}
-    matrix.serverName={{ .Values.matrix.serverName }}
+    matrix.apiUrl={{ if and .Values.global .Values.global.matrix .Values.global.matrix.internalUrl }}{{ .Values.global.matrix.internalUrl }}{{ else }}{{ .Values.matrix.apiUrl }}{{ end }}
+    matrix.serverName={{ if and .Values.global .Values.global.matrix .Values.global.matrix.serverName }}{{ .Values.global.matrix.serverName }}{{ else }}{{ .Values.matrix.serverName }}{{ end }}
     matrix.migrationEnabled={{ .Values.matrix.migrationEnabled }}
-    matrix.registrationSharedSecret={{ .Values.matrix.registrationSharedSecret }}
+    matrix.registrationSharedSecret={{ if and .Values.global .Values.global.matrix .Values.global.matrix.registrationSharedSecret }}{{ .Values.global.matrix.registrationSharedSecret }}{{ else }}{{ .Values.matrix.registrationSharedSecret }}{{ end }}
     
     # ---------------- RabbitMQ ----------------
     spring.rabbitmq.host={{ .Values.rabbitmq.host }}
@@ -112,7 +117,11 @@ data:
     agency.admin.service.api.url=${app.base.url}
     
     # ---------------- CORS ----------------
-    registration.cors.allowed.origins=http://91.99.183.160:9001,https://app.oriso-dev.site
+    {{- if and .Values.global .Values.global.domains .Values.global.domains.app }}
+    registration.cors.allowed.origins=https://{{ .Values.global.domains.app }}
+    {{- else }}
+    registration.cors.allowed.origins=https://app.oriso-dev.site
+    {{- end }}
     registration.cors.allowed.paths=/service/users/askers/new,/service/users/consultants/languages
     
     # ---------------- Other Configuration ----------------

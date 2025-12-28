@@ -23,9 +23,3 @@ service:
 env:
   PORT: "9200"
 
-# ConfigMap for server.js
-configMap:
-  name: status-server-js
-  mountPath: /app/backend/server.js
-  subPath: server.js
-

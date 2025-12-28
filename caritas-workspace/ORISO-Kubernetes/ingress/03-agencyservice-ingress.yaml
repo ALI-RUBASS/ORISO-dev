@@ -51,14 +51,14 @@ spec:
       paths:
       - backend:
           service:
-            name: agencyservice
+            name: oriso-platform-agencyservice
             port:
               number: 8084
         path: /service/agencies
         pathType: Exact
       - backend:
           service:
-            name: agencyservice
+            name: oriso-platform-agencyservice
             port:
               number: 8084
         path: /service/agencies(/|$)(.*)
@@ -121,7 +121,7 @@ spec:
       paths:
       - backend:
           service:
-            name: agencyservice
+            name: oriso-platform-agencyservice
             port:
               number: 8084
         path: /service/agencyadmin(/|$)(.*)
@@ -183,7 +183,7 @@ spec:
       paths:
       - backend:
           service:
-            name: agencyservice
+            name: oriso-platform-agencyservice
             port:
               number: 8084
         path: /service/appointmentservice(/|$)(.*)
@@ -246,7 +246,7 @@ spec:
       paths:
       - backend:
           service:
-            name: agencyservice
+            name: oriso-platform-agencyservice
             port:
               number: 8084
         path: /service/topicadmin(/|$)(.*)

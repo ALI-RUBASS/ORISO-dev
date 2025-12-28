@@ -41,10 +41,13 @@ service:
   port: 9001
   targetPort: 80
 
-# Environment Variables - External URLs for managed clusters
+# Environment Variables - Will be populated from global values in deployment template
+# These are defaults, but deployment template uses global.domains if available
 env:
   NODE_ENV: "production"
   PORT: "80"
+  # URLs will be set from global.domains in deployment template
+  # Defaults below (will be overridden by global values)
   REACT_APP_API_URL: "https://api.oriso-dev.site"
   REACT_APP_MATRIX_URL: "https://matrix.oriso-dev.site"
   REACT_APP_ELEMENT_CALL_URL: "https://call.oriso-dev.site"

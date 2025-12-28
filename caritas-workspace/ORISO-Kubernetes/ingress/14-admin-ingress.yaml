@@ -17,9 +17,9 @@ spec:
         pathType: Prefix
         backend:
           service:
-            name: admin
+            name: oriso-platform-admin
             port:
-              number: 9000
+              number: 80
   tls:
   - hosts:
     - admin.oriso-dev.site

@@ -36,6 +36,19 @@ spec:
         - name: {{ $key }}
           value: {{ $value | quote }}
         {{- end }}
+        {{- if .Values.global }}
+        # Override with global domain values if available
+        {{- if .Values.global.domains }}
+        - name: REACT_APP_API_URL
+          value: "https://{{ .Values.global.domains.api }}"
+        - name: REACT_APP_MATRIX_URL
+          value: "https://{{ .Values.global.domains.matrix }}"
+        - name: REACT_APP_KEYCLOAK_URL
+          value: "https://{{ .Values.global.domains.auth }}"
+        - name: VITE_API_URL
+          value: "https://{{ .Values.global.domains.api }}"
+        {{- end }}
+        {{- end }}
         {{- if .Values.resources }}
         resources:
           {{- toYaml .Values.resources | nindent 10 }}

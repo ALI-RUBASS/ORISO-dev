@@ -54,7 +54,7 @@ spec:
       paths:
       - backend:
           service:
-            name: userservice
+            name: oriso-platform-userservice
             port:
               number: 8082
         path: /service/conversations(/|$)(.*)
@@ -118,7 +118,7 @@ spec:
       paths:
       - backend:
           service:
-            name: userservice
+            name: oriso-platform-userservice
             port:
               number: 8082
         path: /service/users(/|$)(.*)
@@ -184,7 +184,7 @@ spec:
       paths:
       - backend:
           service:
-            name: userservice
+            name: oriso-platform-userservice
             port:
               number: 8082
         path: /service/matrix(/|$)(.*)
@@ -248,7 +248,7 @@ spec:
       paths:
       - backend:
           service:
-            name: userservice
+            name: oriso-platform-userservice
             port:
               number: 8082
         path: /service/users/sessions(/|$)(.*)
@@ -311,7 +311,7 @@ spec:
       paths:
       - backend:
           service:
-            name: userservice
+            name: oriso-platform-userservice
             port:
               number: 8082
         path: /service/useradmin(/|$)(.*)

@@ -17,9 +17,9 @@ spec:
         pathType: Prefix
         backend:
           service:
-            name: frontend
+            name: oriso-platform-frontend
             port:
-              number: 9001
+              number: 80
   tls:
   - hosts:
     - app.oriso-dev.site

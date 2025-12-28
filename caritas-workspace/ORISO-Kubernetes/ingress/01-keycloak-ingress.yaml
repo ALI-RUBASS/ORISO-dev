@@ -52,7 +52,7 @@ spec:
         pathType: ImplementationSpecific
         backend:
           service:
-            name: keycloak
+            name: oriso-platform-keycloak
             port:
               number: 8080
   tls:

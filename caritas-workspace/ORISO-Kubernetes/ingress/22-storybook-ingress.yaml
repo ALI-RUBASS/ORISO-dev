@@ -17,7 +17,7 @@ spec:
         pathType: Prefix
         backend:
           service:
-            name: storybook
+            name: oriso-platform-storybook
             port:
               number: 6006
   tls:

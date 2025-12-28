@@ -14,43 +14,43 @@ const PORT = process.env.PORT || 9200;
 const services = {
   webapp: { 
     name: 'Web Application',
-    url: 'http://frontend.caritas.svc.cluster.local:9001',
+    url: 'http://oriso-platform-frontend.caritas.svc.cluster.local:9001',
     checkType: 'http' // Just check HTTP status
   },
   admin: { 
     name: 'Admin Panel',
-    url: 'http://admin.caritas.svc.cluster.local:9000',
+    url: 'http://oriso-platform-admin.caritas.svc.cluster.local:9000',
     checkType: 'http' // Just check HTTP status
   },
   auth: { 
     name: 'Authentication',
-    url: 'http://keycloak.caritas.svc.cluster.local:8080',
+    url: 'http://oriso-platform-keycloak.caritas.svc.cluster.local:8080',
     checkType: 'http' // Keycloak doesn't have /health endpoint, check root
   },
   api: { 
     name: 'API Services',
-    url: 'http://agencyservice.caritas.svc.cluster.local:8084/actuator/health',
+    url: 'http://oriso-platform-agencyservice.caritas.svc.cluster.local:8084/actuator/health',
     checkType: 'actuator' // Spring Boot Actuator endpoint
   },
   messaging: { 
     name: 'Messaging & Chat',
-    url: 'http://matrix-synapse.caritas.svc.cluster.local:8008/health',
+    url: 'http://oriso-platform-matrix-synapse.caritas.svc.cluster.local:8008/health',
     checkType: 'text', // Returns plain text "OK"
     expectedResponse: 'OK'
   },
   uploads: { 
     name: 'File Uploads',
-    url: 'http://uploadservice.caritas.svc.cluster.local:8085/actuator/health',
-    checkType: 'actuator' // Spring Boot Actuator endpoint
+    url: 'http://oriso-platform-matrix-synapse.caritas.svc.cluster.local:8008/_matrix/media/v3/upload',
+    checkType: 'http' // Matrix media upload endpoint
   },
   video: { 
     name: 'Video Calls',
-    url: 'http://videoservice.caritas.svc.cluster.local:8080/actuator/health',
-    checkType: 'actuator' // Spring Boot Actuator endpoint (was wrong port before)
+    url: 'http://oriso-platform-livekit.caritas.svc.cluster.local:7880',
+    checkType: 'http' // LiveKit health check
   },
   database: { 
     name: 'Database',
-    url: 'http://agencyservice.caritas.svc.cluster.local:8084/actuator/health',
+    url: 'http://oriso-platform-agencyservice.caritas.svc.cluster.local:8084/actuator/health',
     checkType: 'actuator',
     checkComponent: 'db' // Check specific component
   }
@@ -94,6 +94,8 @@ app.get('/api/health/:key', (req, res) => {
       timeout: 5000
     };
 
+    let responseSent = false;
+    
     const request = transport.request(options, (response) => {
       let data = '';
       
@@ -102,6 +104,9 @@ app.get('/api/health/:key', (req, res) => {
       });
       
       response.on('end', () => {
+        if (responseSent || res.headersSent) return;
+        responseSent = true;
+        
         const isSuccess = response.statusCode >= 200 && response.statusCode < 300;
         
         // Handle different check types
@@ -159,26 +164,34 @@ app.get('/api/health/:key', (req, res) => {
     });
 
     request.on('error', (error) => {
-      res.status(502).json({ 
-        status: 'DOWN', 
-        error: error.message 
-      });
+      if (!responseSent && !res.headersSent) {
+        responseSent = true;
+        res.status(502).json({ 
+          status: 'DOWN', 
+          error: error.message 
+        });
+      }
     });
 
     request.on('timeout', () => {
       request.destroy();
-      res.status(504).json({ 
-        status: 'DOWN', 
-        error: 'Request timeout' 
-      });
+      if (!responseSent && !res.headersSent) {
+        responseSent = true;
+        res.status(504).json({ 
+          status: 'DOWN', 
+          error: 'Request timeout' 
+        });
+      }
     });
 
     request.end();
   } catch (error) {
-    res.status(500).json({ 
-      status: 'DOWN', 
-      error: error.message 
-    });
+    if (!res.headersSent) {
+      res.status(500).json({ 
+        status: 'DOWN', 
+        error: error.message 
+      });
+    }
   }
 });
 

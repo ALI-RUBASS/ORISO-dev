@@ -41,7 +41,7 @@ service:
 
 # Database Configuration (MariaDB)
 database:
-  url: "jdbc:mariadb://mariadb.caritas.svc.cluster.local:3306/agencyservice"
+  url: "jdbc:mariadb://oriso-platform-mariadb.caritas.svc.cluster.local:3306/agencyservice"
   username: "agencyservice"
   password: "agencyservice"
   driver: "org.mariadb.jdbc.Driver"
@@ -60,11 +60,11 @@ database:
 
 # MongoDB Configuration
 mongodb:
-  uri: "mongodb://mongodb.caritas.svc.cluster.local:27017/agencyservice"
+  uri: "mongodb://oriso-platform-mongodb.caritas.svc.cluster.local:27017/agencyservice"
 
 # Keycloak Configuration
 keycloak:
-  authServerUrl: "http://keycloak.caritas.svc.cluster.local:8080"
+  authServerUrl: "http://oriso-platform-keycloak.caritas.svc.cluster.local:8080"
   realm: "online-beratung"
   bearerOnly: true
   resource: "agency-service"
@@ -78,26 +78,27 @@ keycloak:
     appClientId: "app"
   jwt:
     # External URL for JWT validation (managed cluster requirement)
-    # JWT tokens are issued with https://auth.oriso-dev.site as issuer, so validation must use external URL
+    # Uses global.keycloak.jwt values if available, otherwise defaults below
     issuerUri: "https://auth.oriso-dev.site/realms/online-beratung"
     jwkSetUri: "https://auth.oriso-dev.site/realms/online-beratung/protocol/openid-connect/certs"
 
 # Matrix Synapse Configuration
+# Uses global.matrix values if available, otherwise defaults below
 matrix:
-  apiUrl: "http://matrix-synapse.caritas.svc.cluster.local:8008"
+  apiUrl: "http://oriso-platform-matrix-synapse.caritas.svc.cluster.local:8008"
   registrationSharedSecret: "caritas-registration-secret-2025"
-  serverName: "caritas.local"
+  serverName: "oriso-dev.site"  # Standardized to match global.matrix.serverName
   adminUsername: "caritas_admin"
   adminPassword: "@CaritasAdmin2025!"
 
 # Service URLs (Kubernetes DNS - Full FQDN for managed clusters)
 services:
   consultingTypeService:
-    apiUrl: "http://consultingtypeservice.caritas.svc.cluster.local:8083"
+    apiUrl: "http://oriso-platform-consultingtypeservice.caritas.svc.cluster.local:8083"
   tenantService:
-    apiUrl: "http://tenantservice.caritas.svc.cluster.local:8081"
+    apiUrl: "http://oriso-platform-tenantservice.caritas.svc.cluster.local:8081"
   userAdminService:
-    apiUrl: "http://userservice.caritas.svc.cluster.local:8082"
+    apiUrl: "http://oriso-platform-userservice.caritas.svc.cluster.local:8082"
   liveService:
     apiUrl: ""
   appointmentService:
@@ -105,8 +106,8 @@ services:
 
 # Rocket.Chat Configuration
 rocketchat:
-  baseUrl: "http://rocketchat.caritas.svc.cluster.local:3000/api/v1"
-  mongoUrl: "mongodb://mongodb.caritas.svc.cluster.local:27017/rocketchat?retryWrites=false"
+  baseUrl: "http://oriso-platform-rocketchat.caritas.svc.cluster.local:3000/api/v1"
+  mongoUrl: "mongodb://oriso-platform-mongodb.caritas.svc.cluster.local:27017/rocketchat?retryWrites=false"
   technical:
     username: "rocket-chat-technical-user"
     password: "technical"

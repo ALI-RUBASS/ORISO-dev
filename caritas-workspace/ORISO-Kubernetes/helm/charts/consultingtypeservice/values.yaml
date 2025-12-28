@@ -26,7 +26,7 @@ service:
 
 # Database Configuration (MariaDB) - Full DNS FQDN for managed clusters
 database:
-  url: "jdbc:mariadb://mariadb.caritas.svc.cluster.local:3306/consultingtypeservice"
+  url: "jdbc:mariadb://oriso-platform-mariadb.caritas.svc.cluster.local:3306/consultingtypeservice"
   username: "consultingtypeservice"
   password: "consultingtypeservice"
   driver: "org.mariadb.jdbc.Driver"
@@ -35,11 +35,11 @@ database:
 
 # MongoDB Configuration - Full DNS FQDN for managed clusters
 mongodb:
-  uri: "mongodb://mongodb.caritas.svc.cluster.local:27017/consultingtypeservice"
+  uri: "mongodb://oriso-platform-mongodb.caritas.svc.cluster.local:27017/consultingtypeservice"
 
 # Keycloak Configuration - External URL for managed clusters
 keycloak:
-  authServerUrl: "http://keycloak.caritas.svc.cluster.local:8080"
+  authServerUrl: "http://oriso-platform-keycloak.caritas.svc.cluster.local:8080"
   realm: "online-beratung"
   jwt:
     # External URL for JWT validation (managed cluster requirement)
@@ -48,7 +48,7 @@ keycloak:
 
 # RabbitMQ Configuration - Full DNS FQDN for managed clusters
 rabbitmq:
-  host: "rabbitmq.caritas.svc.cluster.local"
+  host: "oriso-platform-rabbitmq.caritas.svc.cluster.local"
   port: 5672
   username: "admin"
   password: "admin"
@@ -56,7 +56,7 @@ rabbitmq:
 # Service URLs - Full DNS FQDN for managed clusters
 services:
   tenantService:
-    apiUrl: "http://tenantservice.caritas.svc.cluster.local:8081"
+    apiUrl: "http://oriso-platform-tenantservice.caritas.svc.cluster.local:8081"
 
 # Spring Profile
 spring:

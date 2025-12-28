@@ -17,7 +17,7 @@ spec:
         pathType: Prefix
         backend:
           service:
-            name: signoz
+            name: oriso-platform-signoz
             port:
               number: 8080
   tls:

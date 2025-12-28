@@ -46,7 +46,7 @@ spec:
         pathType: ImplementationSpecific
         backend:
           service:
-            name: matrix-synapse
+            name: oriso-platform-matrix-synapse
             port:
               number: 8008
       # Matrix .well-known endpoints
@@ -54,14 +54,14 @@ spec:
         pathType: ImplementationSpecific
         backend:
           service:
-            name: matrix-synapse
+            name: oriso-platform-matrix-synapse
             port:
               number: 8008
       - path: /.well-known/matrix/server
         pathType: ImplementationSpecific
         backend:
           service:
-            name: matrix-synapse
+            name: oriso-platform-matrix-synapse
             port:
               number: 8008
   tls:

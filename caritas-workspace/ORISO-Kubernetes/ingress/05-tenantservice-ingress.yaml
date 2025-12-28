@@ -1,24 +1,76 @@
+---
+# Mock Ingress for /service/tenant/access and /service/tenant/public/localhost
+# Returns hardcoded response - MUST come BEFORE real TenantService Ingress to take precedence
+# Matches the original nginx.conf mock location block: location ~ ^/service/tenant/.*$
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-prod
-    kubectl.kubernetes.io/last-applied-configuration: '{"apiVersion":"networking.k8s.io/v1","kind":"Ingress","metadata":{"annotations":{"cert-manager.io/cluster-issuer":"letsencrypt-prod","nginx.ingress.kubernetes.io/configuration-snippet":"if
-      ($request_method = OPTIONS) {\n        add_header Access-Control-Allow-Origin
-      $http_origin always;\n        add_header Access-Control-Allow-Methods \"GET,
-      POST, PUT, PATCH, DELETE, OPTIONS\" always;\n        add_header Access-Control-Allow-Headers
-      \"Authorization, Content-Type, Cache-Control, Pragma, Expires, X-CSRF-Token,
-      x-csrf-token, X-Requested-With, X-WHITELIST-HEADER\" always;\n        add_header
-      Access-Control-Allow-Credentials \"true\" always;\n        add_header Access-Control-Max-Age
-      86400 always;\n        add_header Content-Type \"text/plain charset=UTF-8\"
-      always;\n        add_header Content-Length 0 always;\n        return 204;\n      }\n      add_header
-      Access-Control-Allow-Origin $http_origin always;\n      add_header Access-Control-Allow-Credentials
-      \"true\" always;","nginx.ingress.kubernetes.io/cors-allow-credentials":"true","nginx.ingress.kubernetes.io/cors-allow-headers":"Authorization,
-      Content-Type, Cache-Control, Pragma, Expires, X-CSRF-Token, x-csrf-token, X-Requested-With,
-      X-WHITELIST-HEADER","nginx.ingress.kubernetes.io/cors-allow-methods":"GET, POST,
-      PUT, PATCH, DELETE, OPTIONS","nginx.ingress.kubernetes.io/cors-allow-origin":"$http_origin","nginx.ingress.kubernetes.io/cors-max-age":"86400","nginx.ingress.kubernetes.io/enable-cors":"true","nginx.ingress.kubernetes.io/rewrite-target":"/tenant/$2","nginx.ingress.kubernetes.io/ssl-redirect":"true","nginx.ingress.kubernetes.io/use-regex":"true"},"name":"tenantservice-service-tenant-ingress","namespace":"caritas"},"spec":{"ingressClassName":"nginx","rules":[{"host":"api.oriso-dev.site","http":{"paths":[{"backend":{"service":{"name":"tenantservice","port":{"number":8081}}},"path":"/service/tenant(/|$)(.*)","pathType":"ImplementationSpecific"},{"backend":{"service":{"name":"tenantservice","port":{"number":8081}}},"path":"/service/tenant/public","pathType":"Exact"}]}}],"tls":[{"hosts":["api.oriso-dev.site"],"secretName":"api-oriso-dev-site-tls"}]}}
-
-      '
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      # Handle OPTIONS preflight
+      if ($request_method = OPTIONS) {
+        add_header Access-Control-Allow-Origin $http_origin always;
+        add_header Access-Control-Allow-Methods "GET, POST, PUT, PATCH, DELETE, OPTIONS" always;
+        add_header Access-Control-Allow-Headers "Authorization, Content-Type, Cache-Control, Pragma, Expires, X-CSRF-Token, x-csrf-token, X-Requested-With, X-WHITELIST-HEADER" always;
+        add_header Access-Control-Allow-Credentials "true" always;
+        add_header Access-Control-Max-Age 86400 always;
+        add_header Content-Type "text/plain charset=UTF-8" always;
+        add_header Content-Length 0 always;
+        return 204;
+      }
+      # Return mock response immediately - this prevents proxy_pass
+      add_header Access-Control-Allow-Origin $http_origin always;
+      add_header Access-Control-Allow-Credentials "true" always;
+      add_header Content-Type "application/json" always;
+      # Use return to stop processing and return mock JSON
+      return 200 "{\"id\":\"demo-tenant\",\"name\":\"Demo Tenant\",\"active\":true}";
+    nginx.ingress.kubernetes.io/cors-allow-credentials: 'true'
+    nginx.ingress.kubernetes.io/cors-allow-headers: Authorization, Content-Type, Cache-Control,
+      Pragma, Expires, X-CSRF-Token, x-csrf-token, X-Requested-With, X-WHITELIST-HEADER
+    nginx.ingress.kubernetes.io/cors-allow-methods: GET, POST, PUT, PATCH, DELETE,
+      OPTIONS
+    nginx.ingress.kubernetes.io/cors-allow-origin: $http_origin
+    nginx.ingress.kubernetes.io/cors-max-age: '86400'
+    nginx.ingress.kubernetes.io/enable-cors: 'true'
+    nginx.ingress.kubernetes.io/ssl-redirect: 'true'
+    nginx.ingress.kubernetes.io/use-regex: 'true'
+  name: tenantservice-mock-ingress
+  namespace: caritas
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: api.oriso-dev.site
+    http:
+      paths:
+      # Mock /service/tenant/access - specific endpoint that needs mocking
+      # Using Exact pathType to ensure it takes precedence over regex patterns
+      - path: /service/tenant/access
+        pathType: Exact
+        backend:
+          service:
+            name: oriso-platform-tenantservice
+            port:
+              number: 8081
+      # Mock /service/tenant/public/localhost - admin frontend needs this
+      - path: /service/tenant/public/localhost
+        pathType: Exact
+        backend:
+          service:
+            name: oriso-platform-tenantservice
+            port:
+              number: 8081
+  tls:
+  - hosts:
+    - api.oriso-dev.site
+    secretName: api-oriso-dev-site-tls
+---
+# Real TenantService Ingress - Numeric tenant IDs: /service/tenant/{id} -> /tenant/{id}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
     nginx.ingress.kubernetes.io/configuration-snippet: |
       if ($request_method = OPTIONS) {
         add_header Access-Control-Allow-Origin $http_origin always;
@@ -63,7 +115,7 @@ spec:
       # Rewrite: /service/tenant/1 -> /tenant/1
       - backend:
           service:
-            name: tenantservice
+            name: oriso-platform-tenantservice
             port:
               number: 8081
         path: /service/tenant/([0-9]+)(/|$)(.*)
@@ -73,6 +125,7 @@ spec:
     - api.oriso-dev.site
     secretName: api-oriso-dev-site-tls
 ---
+# Real TenantService Ingress - Public paths: /service/tenant/public/* -> /tenant/public/*
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -120,56 +173,37 @@ spec:
       # Rewrite: /service/tenant/public/ -> /tenant/public/
       - backend:
           service:
-            name: tenantservice
+            name: oriso-platform-tenantservice
             port:
               number: 8081
         path: /service/tenant/public(/|$)(.*)
-        pathType: ImplementationSpecific
-      # /service/tenantadmin/*
-      - backend:
-          service:
-            name: tenantservice
-            port:
-              number: 8081
-        path: /service/tenantadmin(/|$)(.*)
         pathType: ImplementationSpecific
   tls:
   - hosts:
     - api.oriso-dev.site
     secretName: api-oriso-dev-site-tls
 ---
+# Real TenantService Ingress - Direct paths: /tenant/* -> /tenant/*
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-prod
-    kubectl.kubernetes.io/last-applied-configuration: '{"apiVersion":"networking.k8s.io/v1","kind":"Ingress","metadata":{"annotations":{"cert-manager.io/cluster-issuer":"letsencrypt-prod","nginx.ingress.kubernetes.io/configuration-snippet":"if
-      ($request_method = OPTIONS) {\n        add_header Access-Control-Allow-Origin
-      $http_origin always;\n        add_header Access-Control-Allow-Methods \"GET,
-      POST, PUT, PATCH, DELETE, OPTIONS\" always;\n        add_header Access-Control-Allow-Headers
-      \"Authorization, Content-Type, Cache-Control, Pragma, Expires, X-CSRF-Token,
-      x-csrf-token, X-Requested-With, X-WHITELIST-HEADER\" always;\n        add_header
-      Access-Control-Allow-Credentials \"true\" always;\n        add_header Access-Control-Max-Age
-      86400 always;\n        add_header Content-Type \"text/plain charset=UTF-8\"
-      always;\n        add_header Content-Length 0 always;\n        return 204;\n      }\n      add_header
-      Access-Control-Allow-Origin $http_origin always;\n      add_header Access-Control-Allow-Credentials
-      \"true\" always;","nginx.ingress.kubernetes.io/cors-allow-credentials":"true","nginx.ingress.kubernetes.io/cors-allow-headers":"Authorization,
-      Content-Type, Cache-Control, Pragma, Expires, X-CSRF-Token, x-csrf-token, X-Requested-With,
-      X-WHITELIST-HEADER","nginx.ingress.kubernetes.io/cors-allow-methods":"GET, POST,
-      PUT, PATCH, DELETE, OPTIONS","nginx.ingress.kubernetes.io/cors-allow-origin":"$http_origin","nginx.ingress.kubernetes.io/cors-max-age":"86400","nginx.ingress.kubernetes.io/enable-cors":"true","nginx.ingress.kubernetes.io/rewrite-target":"/tenant/$2","nginx.ingress.kubernetes.io/ssl-redirect":"true","nginx.ingress.kubernetes.io/use-regex":"true"},"name":"tenantservice-tenant-ingress","namespace":"caritas"},"spec":{"ingressClassName":"nginx","rules":[{"host":"api.oriso-dev.site","http":{"paths":[{"backend":{"service":{"name":"tenantservice","port":{"number":8081}}},"path":"/tenant(/|$)(.*)","pathType":"ImplementationSpecific"}]}}],"tls":[{"hosts":["api.oriso-dev.site"],"secretName":"api-oriso-dev-site-tls"}]}}
-
-      '
-    nginx.ingress.kubernetes.io/configuration-snippet: "if ($request_method = OPTIONS)\
-      \ {\n        add_header Access-Control-Allow-Origin $http_origin always;\n \
-      \       add_header Access-Control-Allow-Methods \"GET, POST, PUT, PATCH, DELETE,\
-      \ OPTIONS\" always;\n        add_header Access-Control-Allow-Headers \"Authorization,\
-      \ Content-Type, Cache-Control, Pragma, Expires, X-CSRF-Token, x-csrf-token,\
-      \ X-Requested-With, X-WHITELIST-HEADER\" always;\n        add_header Access-Control-Allow-Credentials\
-      \ \"true\" always;\n        add_header Access-Control-Max-Age 86400 always;\n\
-      \        add_header Content-Type \"text/plain charset=UTF-8\" always;\n    \
-      \    add_header Content-Length 0 always;\n        return 204;\n      }\n   \
-      \   add_header Access-Control-Allow-Origin $http_origin always;\n      add_header\
-      \ Access-Control-Allow-Credentials \"true\" always;"
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      if ($request_method = OPTIONS) {
+        add_header Access-Control-Allow-Origin $http_origin always;
+        add_header Access-Control-Allow-Methods "GET, POST, PUT, PATCH, DELETE, OPTIONS" always;
+        add_header Access-Control-Allow-Headers "Authorization, Content-Type, Cache-Control, Pragma, Expires, X-CSRF-Token, x-csrf-token, X-Requested-With, X-WHITELIST-HEADER" always;
+        add_header Access-Control-Allow-Credentials "true" always;
+        add_header Access-Control-Max-Age 86400 always;
+        add_header Content-Type "text/plain charset=UTF-8" always;
+        add_header Content-Length 0 always;
+        return 204;
+      }
+      add_header Access-Control-Allow-Origin $http_origin always;
+      add_header Access-Control-Allow-Credentials "true" always;
+      proxy_set_header X-Forwarded-Host $host;
+      proxy_set_header X-Forwarded-Proto $scheme;
     nginx.ingress.kubernetes.io/cors-allow-credentials: 'true'
     nginx.ingress.kubernetes.io/cors-allow-headers: Authorization, Content-Type, Cache-Control,
       Pragma, Expires, X-CSRF-Token, x-csrf-token, X-Requested-With, X-WHITELIST-HEADER
@@ -191,7 +225,7 @@ spec:
       paths:
       - backend:
           service:
-            name: tenantservice
+            name: oriso-platform-tenantservice
             port:
               number: 8081
         path: /tenant(/|$)(.*)
@@ -201,38 +235,27 @@ spec:
     - api.oriso-dev.site
     secretName: api-oriso-dev-site-tls
 ---
+# Real TenantService Ingress - Admin paths: /service/tenantadmin/* -> /tenantadmin/*
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-prod
-    kubectl.kubernetes.io/last-applied-configuration: '{"apiVersion":"networking.k8s.io/v1","kind":"Ingress","metadata":{"annotations":{"cert-manager.io/cluster-issuer":"letsencrypt-prod","nginx.ingress.kubernetes.io/configuration-snippet":"if
-      ($request_method = OPTIONS) {\n        add_header Access-Control-Allow-Origin
-      $http_origin always;\n        add_header Access-Control-Allow-Methods \"GET,
-      POST, PUT, PATCH, DELETE, OPTIONS\" always;\n        add_header Access-Control-Allow-Headers
-      \"Authorization, Content-Type, Cache-Control, Pragma, Expires, X-CSRF-Token,
-      x-csrf-token, X-Requested-With, X-WHITELIST-HEADER\" always;\n        add_header
-      Access-Control-Allow-Credentials \"true\" always;\n        add_header Access-Control-Max-Age
-      86400 always;\n        add_header Content-Type \"text/plain charset=UTF-8\"
-      always;\n        add_header Content-Length 0 always;\n        return 204;\n      }\n      add_header
-      Access-Control-Allow-Origin $http_origin always;\n      add_header Access-Control-Allow-Credentials
-      \"true\" always;","nginx.ingress.kubernetes.io/cors-allow-credentials":"true","nginx.ingress.kubernetes.io/cors-allow-headers":"Authorization,
-      Content-Type, Cache-Control, Pragma, Expires, X-CSRF-Token, x-csrf-token, X-Requested-With,
-      X-WHITELIST-HEADER","nginx.ingress.kubernetes.io/cors-allow-methods":"GET, POST,
-      PUT, PATCH, DELETE, OPTIONS","nginx.ingress.kubernetes.io/cors-allow-origin":"$http_origin","nginx.ingress.kubernetes.io/cors-max-age":"86400","nginx.ingress.kubernetes.io/enable-cors":"true","nginx.ingress.kubernetes.io/rewrite-target":"/tenantadmin/$2","nginx.ingress.kubernetes.io/ssl-redirect":"true","nginx.ingress.kubernetes.io/use-regex":"true"},"name":"tenantservice-tenantadmin-ingress","namespace":"caritas"},"spec":{"ingressClassName":"nginx","rules":[{"host":"api.oriso-dev.site","http":{"paths":[{"backend":{"service":{"name":"tenantservice","port":{"number":8081}}},"path":"/service/tenantadmin(/|$)(.*)","pathType":"ImplementationSpecific"}]}}],"tls":[{"hosts":["api.oriso-dev.site"],"secretName":"api-oriso-dev-site-tls"}]}}
-
-      '
-    nginx.ingress.kubernetes.io/configuration-snippet: "if ($request_method = OPTIONS)\
-      \ {\n        add_header Access-Control-Allow-Origin $http_origin always;\n \
-      \       add_header Access-Control-Allow-Methods \"GET, POST, PUT, PATCH, DELETE,\
-      \ OPTIONS\" always;\n        add_header Access-Control-Allow-Headers \"Authorization,\
-      \ Content-Type, Cache-Control, Pragma, Expires, X-CSRF-Token, x-csrf-token,\
-      \ X-Requested-With, X-WHITELIST-HEADER\" always;\n        add_header Access-Control-Allow-Credentials\
-      \ \"true\" always;\n        add_header Access-Control-Max-Age 86400 always;\n\
-      \        add_header Content-Type \"text/plain charset=UTF-8\" always;\n    \
-      \    add_header Content-Length 0 always;\n        return 204;\n      }\n   \
-      \   add_header Access-Control-Allow-Origin $http_origin always;\n      add_header\
-      \ Access-Control-Allow-Credentials \"true\" always;"
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      if ($request_method = OPTIONS) {
+        add_header Access-Control-Allow-Origin $http_origin always;
+        add_header Access-Control-Allow-Methods "GET, POST, PUT, PATCH, DELETE, OPTIONS" always;
+        add_header Access-Control-Allow-Headers "Authorization, Content-Type, Cache-Control, Pragma, Expires, X-CSRF-Token, x-csrf-token, X-Requested-With, X-WHITELIST-HEADER" always;
+        add_header Access-Control-Allow-Credentials "true" always;
+        add_header Access-Control-Max-Age 86400 always;
+        add_header Content-Type "text/plain charset=UTF-8" always;
+        add_header Content-Length 0 always;
+        return 204;
+      }
+      add_header Access-Control-Allow-Origin $http_origin always;
+      add_header Access-Control-Allow-Credentials "true" always;
+      proxy_set_header X-Forwarded-Host $host;
+      proxy_set_header X-Forwarded-Proto $scheme;
     nginx.ingress.kubernetes.io/cors-allow-credentials: 'true'
     nginx.ingress.kubernetes.io/cors-allow-headers: Authorization, Content-Type, Cache-Control,
       Pragma, Expires, X-CSRF-Token, x-csrf-token, X-Requested-With, X-WHITELIST-HEADER
@@ -241,7 +264,10 @@ metadata:
     nginx.ingress.kubernetes.io/cors-allow-origin: $http_origin
     nginx.ingress.kubernetes.io/cors-max-age: '86400'
     nginx.ingress.kubernetes.io/enable-cors: 'true'
-    nginx.ingress.kubernetes.io/rewrite-target: /tenantadmin/$2
+    # Rewrite: /service/tenantadmin/1 -> /tenantadmin/1
+    # Pattern /service/tenantadmin(/|$)(.*) captures: $1=/ or empty, $2=rest
+    # For /service/tenantadmin/1: $1="/", $2="1" -> /tenantadmin/1
+    nginx.ingress.kubernetes.io/rewrite-target: /tenantadmin$1$2
     nginx.ingress.kubernetes.io/ssl-redirect: 'true'
     nginx.ingress.kubernetes.io/use-regex: 'true'
   name: tenantservice-tenantadmin-ingress
@@ -254,7 +280,7 @@ spec:
       paths:
       - backend:
           service:
-            name: tenantservice
+            name: oriso-platform-tenantservice
             port:
               number: 8081
         path: /service/tenantadmin(/|$)(.*)

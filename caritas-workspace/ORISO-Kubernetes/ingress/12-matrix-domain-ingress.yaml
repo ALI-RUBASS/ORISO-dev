@@ -44,7 +44,7 @@ spec:
         pathType: Prefix
         backend:
           service:
-            name: matrix-synapse
+            name: oriso-platform-matrix-synapse
             port:
               number: 8008
   tls:

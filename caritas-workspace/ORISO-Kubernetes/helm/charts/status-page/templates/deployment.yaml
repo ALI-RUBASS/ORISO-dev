@@ -34,17 +34,38 @@ spec:
         - name: {{ $key }}
           value: {{ $value | quote }}
         {{- end }}
+        # Service URLs - Use global values if available, otherwise defaults in server.js
+        {{- if and .Values.global .Values.global.services .Values.global.services.frontend }}
+        - name: STATUS_WEBAPP_URL
+          value: {{ .Values.global.services.frontend.url | quote }}
+        {{- end }}
+        {{- if and .Values.global .Values.global.services .Values.global.services.admin }}
+        - name: STATUS_ADMIN_URL
+          value: {{ .Values.global.services.admin.url | quote }}
+        {{- end }}
+        {{- if and .Values.global .Values.global.keycloak .Values.global.keycloak.internalUrl }}
+        - name: STATUS_AUTH_URL
+          value: {{ .Values.global.keycloak.internalUrl | quote }}
+        {{- end }}
+        {{- if and .Values.global .Values.global.services .Values.global.services.agencyservice }}
+        - name: STATUS_API_URL
+          value: {{ printf "%s/actuator/health" .Values.global.services.agencyservice.url | quote }}
+        - name: STATUS_DATABASE_URL
+          value: {{ printf "%s/actuator/health" .Values.global.services.agencyservice.url | quote }}
+        {{- end }}
+        {{- if and .Values.global .Values.global.matrix .Values.global.matrix.internalUrl }}
+        - name: STATUS_MESSAGING_URL
+          value: {{ printf "%s/health" .Values.global.matrix.internalUrl | quote }}
+        - name: STATUS_UPLOADS_URL
+          value: {{ printf "%s/_matrix/media/v3/upload" .Values.global.matrix.internalUrl | quote }}
+        {{- end }}
+        {{- if and .Values.global .Values.global.services .Values.global.services.livekit }}
+        - name: STATUS_VIDEO_URL
+          value: {{ .Values.global.services.livekit.url | quote }}
+        {{- end }}
         {{- if .Values.resources }}
         resources:
           {{- toYaml .Values.resources | nindent 10 }}
         {{- end }}
-        volumeMounts:
-        - name: server-js
-          mountPath: {{ .Values.configMap.mountPath }}
-          subPath: {{ .Values.configMap.subPath }}
-      volumes:
-      - name: server-js
-        configMap:
-          name: {{ .Values.configMap.name }}
       terminationGracePeriodSeconds: 30
 

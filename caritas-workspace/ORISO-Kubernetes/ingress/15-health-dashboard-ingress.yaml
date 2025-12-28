@@ -17,7 +17,7 @@ spec:
         pathType: Prefix
         backend:
           service:
-            name: health-dashboard
+            name: oriso-platform-health-dashboard
             port:
               number: 9100
   tls:

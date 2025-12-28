@@ -13,11 +13,18 @@ spec:
   - host: call.oriso-dev.site
     http:
       paths:
+      - path: /config.json
+        pathType: Exact
+        backend:
+          service:
+            name: oriso-platform-element-call
+            port:
+              number: 80
       - path: /
         pathType: Prefix
         backend:
           service:
-            name: element-call
+            name: oriso-platform-element-call
             port:
               number: 80
   tls:

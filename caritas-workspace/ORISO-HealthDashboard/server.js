@@ -17,10 +17,10 @@ try {
   services = JSON.parse(raw);
 } catch (err) {
   services = {
-    tenantservice: { name: 'TenantService', url: 'http://localhost:8081/actuator/health' },
-    userservice: { name: 'UserService', url: 'http://localhost:8082/actuator/health' },
-    consultingtypeservice: { name: 'ConsultingTypeService', url: 'http://localhost:8083/actuator/health' },
-    agencyservice: { name: 'AgencyService', url: 'http://localhost:8084/actuator/health' },
+    tenantservice: { name: 'TenantService', url: process.env.TENANT_SERVICE_URL || 'http://oriso-platform-tenantservice.caritas.svc.cluster.local:8081/actuator/health' },
+    userservice: { name: 'UserService', url: process.env.USER_SERVICE_URL || 'http://oriso-platform-userservice.caritas.svc.cluster.local:8082/actuator/health' },
+    consultingtypeservice: { name: 'ConsultingTypeService', url: process.env.CONSULTING_TYPE_SERVICE_URL || 'http://oriso-platform-consultingtypeservice.caritas.svc.cluster.local:8083/actuator/health' },
+    agencyservice: { name: 'AgencyService', url: process.env.AGENCY_SERVICE_URL || 'http://oriso-platform-agencyservice.caritas.svc.cluster.local:8084/actuator/health' },
     liveservice: { name: 'LiveService', url: 'http://localhost:8085/actuator/health' },
     statisticsservice: { name: 'StatisticsService', url: 'http://localhost:8086/actuator/health' },
     keycloak: { name: 'Keycloak', url: 'http://localhost:8080/health' },

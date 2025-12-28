@@ -20,7 +20,7 @@ spec:
         pathType: Prefix
         backend:
           service:
-            name: livekit-token-service
+            name: oriso-platform-livekit-token-service
             port:
               number: 3010
       # LiveKit main service
@@ -28,7 +28,7 @@ spec:
         pathType: Prefix
         backend:
           service:
-            name: livekit
+            name: oriso-platform-livekit
             port:
               number: 7880
   tls:
